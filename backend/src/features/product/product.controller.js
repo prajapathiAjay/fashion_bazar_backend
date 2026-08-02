@@ -13,7 +13,7 @@ export default class ProductController {
       res.status(200).send(products);
     }catch(err){
     console.log(err);
-    return res.status(200).send("Something went wrong");
+    return res.status(200).send(err);
   }
    
   }
@@ -21,11 +21,11 @@ export default class ProductController {
   async addProduct(req, res) {
     try{
       console.log(req.body);
-    const { name, price, sizes, categories } = req.body;
-    const newProduct = new ProductModel(name,null, parseFloat(price),
-    req.file.filename,categories, sizes.split(',')
-    );
-    const createdProduct = await this.productRepository.add(newProduct);
+    // const { name, price, sizes, categories } = req.body;
+    // const newProduct = new ProductModel(name,null, parseFloat(price),
+    // req.file.filename,categories, sizes.split(',')
+    // );
+    const createdProduct = await this.productRepository.add(req.body);
     res.status(201).send(createdProduct);
   }catch(err){
     console.log(err);

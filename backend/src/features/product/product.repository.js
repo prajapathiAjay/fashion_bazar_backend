@@ -19,16 +19,20 @@ class ProductRepository{
     async add(productData){
         try{
             // 1. Adding Product
-            productData.categories=productData.category.split(',');
-            console.log(productData);
+            // productData.categories=productData.category.split(',');
+            // console.log(productData);
             const newProduct = new ProductModel(productData);
             const savedProduct = await newProduct.save();
 
             // 2. Update categories.
-            await CategoryModel.updateMany(
-                {_id: {$in: productData.categories}},
-                {$push: {products: new ObjectId(savedProduct._id)}}
-            )
+            // await CategoryModel.updateMany(
+            //     {_id: {$in: productData.categories}},
+            //     {$push: {products: new ObjectId(savedProduct._id)}}
+            // )
+
+
+
+
         }catch(err){
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);    
@@ -37,22 +41,25 @@ class ProductRepository{
 
     async getAll(){
         try{
-            const db = getDB();
-            const collection = db.collection(this.collection);
-            const products = await collection.find().toArray();
-            console.log(products);
-            return products;
+            // const db = getDB();
+            // const collection = db.collection(this.collection);
+            // const products = await collection.find().toArray();
+            // console.log(products);
+            // return products;
+              return await ProductModel.find();
         }catch(err){
             console.log(err);
-            throw new ApplicationError("Something went wrong with database", 500);    
+            throw new ApplicationError(err, 200);    
         }
     }
 
     async get(id){
         try{
-            const db = getDB();
-            const collection = db.collection(this.collection);
-            return await collection.findOne({_id: new ObjectId(id)});
+            // const db = getDB();
+            // const collection = db.collection(this.collection);
+            // return await collection.findOne({_id: new ObjectId(id)});
+
+            return await ProductModel.findById(id)
         }catch(err){
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);    

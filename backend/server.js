@@ -52,7 +52,7 @@ server.use('/api/orders', jwtAuth, orderRouter);
 
 server.use(
   '/api/products',
-  jwtAuth,
+  // jwtAuth,
   productRouter
 );
 server.use(
