@@ -10,7 +10,9 @@ export default class ProductController {
   async getAllProducts(req, res) {
     try{
       const products = await this.productRepository.getAll();
-      res.status(200).send(products);
+      res.status(200).send(
+        {success:true,message:"Products fetched successfully", data:products,}
+      );
     }catch(err){
     console.log(err);
     return res.status(200).send(err);
@@ -26,10 +28,12 @@ export default class ProductController {
     // req.file.filename,categories, sizes.split(',')
     // );
     const createdProduct = await this.productRepository.add(req.body);
-    res.status(201).send(createdProduct);
+   return  res.status(201).send(createdProduct);
   }catch(err){
-    console.log(err);
-    return res.status(200).send("Something went wrong");
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
   }
 

@@ -15,7 +15,7 @@ import orderRouter from './src/features/order/order.routes.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
 import likeRouter from './src/features/like/like.routes.js';
-
+import categoryRouter from './src/features/category/category.routes.js';
 // 2. Create Server
 const server = express();
 
@@ -26,7 +26,8 @@ dotenv.config();
 server.use((req, res, next) => {
   res.header(
     'Access-Control-Allow-Origin',
-    'http://localhost:5500'
+       "http://localhost:5173"
+    // 'http://localhost:5500'
   );
   res.header('Access-Control-Allow-Headers', '*');
   res.header('Access-Control-Allow-Methods', '*');
@@ -48,21 +49,26 @@ server.use(
 );
 
 server.use(loggerMiddleware);
-server.use('/api/orders', jwtAuth, orderRouter);
+server.use('/api/orders',
+  //  jwtAuth,
+    orderRouter);
 
 server.use(
   '/api/products',
   // jwtAuth,
   productRouter
 );
+server.use("/api/category",categoryRouter)
 server.use(
   '/api/cartItems',
   loggerMiddleware,
-  jwtAuth,
+  // jwtAuth,
   cartRouter
 );
 server.use('/api/users', userRouter);
-server.use('/api/likes', jwtAuth, likeRouter)
+server.use('/api/likes',
+  //  jwtAuth,
+    likeRouter)
 
 // 3. Default request handler
 server.get('/', (req, res) => {

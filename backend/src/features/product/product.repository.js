@@ -8,7 +8,7 @@ import { categorySchema } from "./category.schema.js";
 
 const ProductModel = mongoose.model("Product", productSchema);
 const ReviewModel = mongoose.model("Review", reviewSchema);
-const CategoryModel = mongoose.model('Category', categorySchema)
+// const CategoryModel = mongoose.model('Category', categorySchema)
 
 class ProductRepository{
 
@@ -23,7 +23,7 @@ class ProductRepository{
             // console.log(productData);
             const newProduct = new ProductModel(productData);
             const savedProduct = await newProduct.save();
-
+                return savedProduct
             // 2. Update categories.
             // await CategoryModel.updateMany(
             //     {_id: {$in: productData.categories}},
@@ -35,7 +35,7 @@ class ProductRepository{
 
         }catch(err){
             console.log(err);
-            throw new ApplicationError("Something went wrong with database", 500);    
+            throw new ApplicationError(err, 500);    
         }
     }
 
