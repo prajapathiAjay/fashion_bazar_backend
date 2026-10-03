@@ -16,6 +16,7 @@ import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
 import likeRouter from './src/features/like/like.routes.js';
 import categoryRouter from './src/features/category/category.routes.js';
+import uploadRouter from './src/features/upload/upload.routes.js';
 // 2. Create Server
 const server = express();
 
@@ -23,12 +24,13 @@ const server = express();
 dotenv.config();
 
 // CORS policy configuration
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173'];
 server.use((req, res, next) => {
-  res.header(
-    'Access-Control-Allow-Origin',
-       "http://localhost:5173"
-    // 'http://localhost:5500'
-  );
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  }
   res.header('Access-Control-Allow-Headers', '*');
   res.header('Access-Control-Allow-Methods', '*');
   // return ok for preflight request.
@@ -59,6 +61,9 @@ server.use(
   productRouter
 );
 server.use("/api/category",categoryRouter)
+server.use("/api/upload",
+  // jwtAuth,
+  uploadRouter)
 server.use(
   '/api/cartItems',
   loggerMiddleware,
