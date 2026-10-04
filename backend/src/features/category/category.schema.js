@@ -38,6 +38,6 @@ import mongoose from "mongoose"
 
 
 
-})
+}, { timestamps: true })
 
 export const CategoryModel=mongoose.model("Category",categorySchema)

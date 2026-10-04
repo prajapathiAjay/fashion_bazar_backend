@@ -11,6 +11,17 @@ categoryRouter.get("/",(req,res,next)=>{
     categoryController.getAllCategory(req,res,next)
 
 })
+categoryRouter.get("/:id",(req,res,next)=>{
+    categoryController.getCategoryById(req,res,next)
+})
+
+categoryRouter.patch("/:id",(req,res,next)=>{
+    categoryController.updateCategory(req,res,next)
+})
+
+categoryRouter.delete("/:id",(req,res,next)=>{
+    categoryController.deleteCategory(req,res,next)
+})
 
 
 

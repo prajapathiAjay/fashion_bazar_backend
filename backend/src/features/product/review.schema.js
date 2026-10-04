@@ -11,4 +11,4 @@ export const reviewSchema = new mongoose.Schema({
         ref:'User'
     },
     rating: Number
-})
+}, { timestamps: true })

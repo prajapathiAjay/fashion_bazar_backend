@@ -8,4 +8,4 @@ export const categorySchema = new mongoose.Schema({
             ref:'Product'
         }
     ]
-})
+}, { timestamps: true })

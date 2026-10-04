@@ -13,7 +13,7 @@ export const likeSchema = new mongoose.Schema({
         type:String,
         enum:['Product','Category']
     }
-}).pre('save', (next)=>{
+}, { timestamps: true }).pre('save', (next)=>{
     console.log("New like coming in");
     next();
 })

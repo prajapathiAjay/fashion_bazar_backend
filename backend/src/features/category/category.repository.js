@@ -35,5 +35,33 @@ export default class CategoryRepository {
   }
 
 
+  async getCategoryById(id) {
+    try {
+      const category = await CategoryModel.findById(id)
+      return category
+    } catch (error) {
+      throw new ApplicationError(error, 500)
+    }
+  }
+
+  async updateCategory(id, data) {
+    try {
+      const updatedCategory = await CategoryModel.findByIdAndUpdate(id, data, { new: true })
+      return updatedCategory
+    } catch (error) {
+      throw new ApplicationError(error, 500)
+    }
+  }
+
+  async deleteCategory(id) {
+    try {
+      const deletedCategory = await CategoryModel.findByIdAndDelete(id)
+      return deletedCategory
+    } catch (error) {
+      throw new ApplicationError(error, 500)
+    }
+  }
+
+
 
 }
