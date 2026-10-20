@@ -10,12 +10,12 @@ export default class ProductController {
   async getAllProducts(req, res) {
     try{
       const products = await this.productRepository.getAll();
-      res.status(200).send(
+      res.status(200).json(
         {success:true,message:"Products fetched successfully", data:products,}
       );
     }catch(err){
     console.log(err);
-    return res.status(200).send(err);
+    return res.status(200).json({success:false,message:"Something went wrong"});
   }
    
   }
@@ -28,7 +28,7 @@ export default class ProductController {
     // req.file.filename,categories, sizes.split(',')
     // );
     const createdProduct = await this.productRepository.add(req.body);
-   return  res.status(201).send(createdProduct);
+   return  res.status(201).json({success:true,message:"Product added successfully", data:createdProduct});
   }catch(err){
     return res.status(500).json({
       success: false,
@@ -49,7 +49,7 @@ export default class ProductController {
     );
     return res
       .status(200)
-      .send('Rating has been added');
+      .json({success:true,message:"Rating has been added"});
   
     }catch(err){
       console.log(err);
@@ -63,13 +63,13 @@ export default class ProductController {
       const id = req.params.id;
       const product = await this.productRepository.get(id);
       if (!product) {
-        res.status(404).send('Product not found');
+        return res.status(404).json({success:false,message:"Product not found"});
       } else {
-        return res.status(200).send(product);
+        return res.status(200).json({success:true,message:"Product fetched successfully", data:product});
       }
     }catch(err){
     console.log(err);
-    return res.status(200).send("Something went wrong");
+    return res.status(200).json({success:false,message:"Something went wrong"});
   }
 }
 
@@ -82,20 +82,20 @@ export default class ProductController {
       minPrice,
       categories
     );
-    res.status(200).send(result);
+    res.status(200).json({success:true,message:"Products filtered successfully", data:result});
   }catch(err){
     console.log(err);
-    return res.status(200).send("Something went wrong");
+    return res.status(200).json({success:false,message:"Something went wrong"});
   }
   }
 
   async averagePrice(req, res, next){
     try{
       const result =await this.productRepository.averageProductPricePerCategory();
-      res.status(200).send(result);
+      res.status(200).json({success:true,message:"Average prices fetched successfully", data:result});
     }catch(err){
     console.log(err);
-    return res.status(200).send("Something went wrong");
+    return res.status(200).json({success:false,message:"Something went wrong"});
   }
   }
 }
