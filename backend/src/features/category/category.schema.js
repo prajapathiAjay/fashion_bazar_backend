@@ -32,13 +32,6 @@ import mongoose from "mongoose"
 
 
 
-
-
-
-
-
-
-
 }, { timestamps: true })
 
 // to add slug before saving the category
