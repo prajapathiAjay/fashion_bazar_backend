@@ -402,3 +402,34 @@
  Tue Oct 20 2026 14:13:43 GMT+0530 (India Standard Time) - /api/category/6ad728762c6a935c4aa35d01 - {}
  Tue Oct 20 2026 14:13:43 GMT+0530 (India Standard Time) - /api/category - {}
  Tue Oct 20 2026 14:13:46 GMT+0530 (India Standard Time) - /api/category/6ad728b82c6a935c4aa35d07 - {}
+ Tue Oct 20 2026 19:10:55 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:10:57 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:13:57 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:14:18 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:14:40 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:15:10 GMT+0530 (India Standard Time) - /api/products?category=womens - {}
+ Tue Oct 20 2026 19:15:10 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 19:15:16 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 19:15:22 GMT+0530 (India Standard Time) - /api/products?category=mens - {}
+ Tue Oct 20 2026 19:16:16 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:17:36 GMT+0530 (India Standard Time) - /api/upload - {}
+ Tue Oct 20 2026 19:17:40 GMT+0530 (India Standard Time) - /api/products - {"name":"mens shirt","summary":"Best shirt of all time","description":"the product describtion gives best details","brand":"Ajay","price":5550,"discount":4,"stock":7,"isActive":true,"categories":["6ad7685cce53a09de2c607d5"],"sizes":["M"],"colors":["redddd"],"images":["https://res.cloudinary.com/dujidnpfl/image/upload/v1792504060/products/zxilrepcjqundnsyutnl.jpg"]}
+ Tue Oct 20 2026 19:17:40 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:17:47 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 19:17:47 GMT+0530 (India Standard Time) - /api/products?category=mens - {}
+ Tue Oct 20 2026 19:17:52 GMT+0530 (India Standard Time) - /api/products/6ad770fcd4d65597dbfa2564 - {}
+ Tue Oct 20 2026 19:18:05 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 19:18:07 GMT+0530 (India Standard Time) - /api/products?category=womens - {}
+ Tue Oct 20 2026 19:18:08 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:18:18 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 19:18:20 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:18:31 GMT+0530 (India Standard Time) - /api/products?category=womens - {}
+ Tue Oct 20 2026 19:19:50 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 19:21:06 GMT+0530 (India Standard Time) - /api/products?category=womens - {}
+ Tue Oct 20 2026 19:21:07 GMT+0530 (India Standard Time) - /api/products?category=mens - {}
+ Tue Oct 20 2026 19:26:26 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 19:26:29 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 20:11:00 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 20:11:00 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 20:11:36 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 20:17:35 GMT+0530 (India Standard Time) - /api/products - {}

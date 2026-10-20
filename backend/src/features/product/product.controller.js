@@ -9,7 +9,8 @@ export default class ProductController {
 
   async getAllProducts(req, res) {
     try{
-      const products = await this.productRepository.getAll();
+      // GET /api/products?category=mens
+      const products = await this.productRepository.getAll(req.query.category);
       res.status(200).json(
         {success:true,message:"Products fetched successfully", data:products,}
       );

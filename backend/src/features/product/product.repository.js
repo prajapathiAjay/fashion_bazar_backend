@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { productSchema } from "./product.schema.js";
 import { reviewSchema } from "./review.schema.js";
 import { categorySchema } from "./category.schema.js";
+import { CategoryModel } from "../category/category.schema.js";
 
 const ProductModel = mongoose.model("Product", productSchema);
 const ReviewModel = mongoose.model("Review", reviewSchema);
@@ -39,14 +40,25 @@ class ProductRepository{
         }
     }
 
-    async getAll(){
+    async getAll(categorySlug){
         try{
             // const db = getDB();
             // const collection = db.collection(this.collection);
             // const products = await collection.find().toArray();
             // console.log(products);
             // return products;
-              return await ProductModel.find();
+
+            // No slug (or "all") -> every product
+            if(!categorySlug || categorySlug === "all"){
+                return await ProductModel.find();
+            }
+
+            // Products store category ids, so look the category up by slug first
+            const category = await CategoryModel.findOne({slug: categorySlug.toLowerCase()});
+            if(!category){
+                return [];
+            }
+            return await ProductModel.find({categories: category._id});
         }catch(err){
             console.log(err);
             throw new ApplicationError(err, 200);    
