@@ -7,7 +7,8 @@ import mongoose from "mongoose"
     categoryName:{
         type:String,
         required:true,
-
+        unique:true,
+        trim:true
     },
     description:{
         type:String,
@@ -19,15 +20,15 @@ import mongoose from "mongoose"
     },
     isActive:{
         type:Boolean,
-        trim:true,
         default:true
     },
-//       slug: {
-//     type: String,
-//     required: true,
-//     unique: true,
-//     trim: true,
-//   },
+    slug: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
 
 
 
@@ -39,5 +40,21 @@ import mongoose from "mongoose"
 
 
 }, { timestamps: true })
+
+// to add slug before saving the category
+categorySchema.pre("validate",function(){
+if(this.categoryName && !this.slug){
+    this.slug=this.categoryName
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g,"-")
+        .replace(/[^\w-]+/g,"")
+        .replace(/-+/g,"-")
+        .replace(/^-|-$/g,"")
+}
+
+
+
+})
 
 export const CategoryModel=mongoose.model("Category",categorySchema)
