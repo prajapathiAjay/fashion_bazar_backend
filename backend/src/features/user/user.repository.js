@@ -5,59 +5,70 @@ import { ApplicationError } from "../../error-handler/applicationError.js";
 // creating model from schema.
 const UserModel = mongoose.model('User', userSchema)
 
-export default class UserRepository{
+export default class UserRepository {
 
-    async resetPassword(userID, hashedPassword){
-        try{
+    async resetPassword(userID, hashedPassword) {
+        try {
             let user = await UserModel.findById(userID);
-            if(user){
-                user.password=hashedPassword;
+            if (user) {
+                user.password = hashedPassword;
                 user.save();
-            }else{
+            } else {
                 throw new Error("No such user found");
             }
-            
-        } catch(err){
+
+        } catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
         }
     }
 
-    async signUp(user){
-        try{
+    async signUp(user) {
+        try {
             // create instance of model.
             const newUser = new UserModel(user);
             await newUser.save();
             return newUser;
         }
-        catch(err){
+        catch (err) {
             console.log(err);
-            if(err instanceof mongoose.Error.ValidationError){
+            if (err instanceof mongoose.Error.ValidationError) {
                 throw err;
-            }else{
+            } else {
                 console.log(err);
                 throw new ApplicationError("Something went wrong with database", 500);
             }
-            
+
         }
     }
 
-    async signIn(email, password){
-        try{
-           return await UserModel.findOne({email, password});
+    async signIn(email, password) {
+        try {
+            return await UserModel.findOne({ email, password });
         }
-        catch(err){
+        catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
         }
     }
 
     async findByEmail(email) {
+        try {
+            return await UserModel.findOne({ email });
+        } catch (err) {
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
+
+    async getUserById(userID) {
         try{
-        return await UserModel.findOne({email});
-      }catch(err){
-        console.log(err);
+         const user=await UserModel.findById(userID)
+         return user;
+        }catch(err){
+
         throw new ApplicationError("Something went wrong with database", 500);
-      }
-      }
+        }
+    }
 }

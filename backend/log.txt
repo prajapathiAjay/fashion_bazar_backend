@@ -433,3 +433,22 @@
  Tue Oct 20 2026 20:11:00 GMT+0530 (India Standard Time) - /api/products - {}
  Tue Oct 20 2026 20:11:36 GMT+0530 (India Standard Time) - /api/products?category=all - {}
  Tue Oct 20 2026 20:17:35 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 20:32:04 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 20:37:57 GMT+0530 (India Standard Time) - /api/products?category=jewelry - {}
+ Tue Oct 20 2026 20:38:03 GMT+0530 (India Standard Time) - /api/products?category=mens - {}
+ Tue Oct 20 2026 20:38:05 GMT+0530 (India Standard Time) - /api/products?category=all - {}
+ Tue Oct 20 2026 20:38:05 GMT+0530 (India Standard Time) - /api/products?category=womens - {}
+ Tue Oct 20 2026 20:38:12 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 21:21:16 GMT+0530 (India Standard Time) - /api/users/signup - {"name":"Ajay Prajapathi","email":"vegepet573@dnsink.com","password":"74036702"}
+ Tue Oct 20 2026 21:32:30 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 21:32:30 GMT+0530 (India Standard Time) - /api/products - {}
+ Tue Oct 20 2026 21:35:00 GMT+0530 (India Standard Time) - /api/category - {}
+ Tue Oct 20 2026 21:35:00 GMT+0530 (India Standard Time) - /api/products - {}
+ Wed Oct 21 2026 21:53:43 GMT+0530 (India Standard Time) - /api/category - {}
+ Wed Oct 21 2026 21:53:43 GMT+0530 (India Standard Time) - /api/products - {}
+ Wed Oct 21 2026 21:59:03 GMT+0530 (India Standard Time) - /api/category - {}
+ Wed Oct 21 2026 21:59:03 GMT+0530 (India Standard Time) - /api/products - {}
+ Wed Oct 21 2026 22:00:15 GMT+0530 (India Standard Time) - /favicon.ico - {}
+ Wed Oct 21 2026 22:00:41 GMT+0530 (India Standard Time) - /api/users/signup - {"name":"Ajay Prajapathi","email":"arjun1234@gmail.com","password":"Arjun@1234"}
+ Wed Oct 21 2026 22:36:36 GMT+0530 (India Standard Time) - /api/users? - {}
+ Wed Oct 21 2026 22:42:36 GMT+0530 (India Standard Time) - /api/products - {}
