@@ -31,7 +31,8 @@ server.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   }
-  res.header('Access-Control-Allow-Headers', '*');
+  // '*' doesn't cover Authorization in browsers, so list it explicitly
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', '*');
   // return ok for preflight request.
   if (req.method == 'OPTIONS') {

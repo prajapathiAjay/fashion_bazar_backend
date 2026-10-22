@@ -64,7 +64,7 @@ export default class UserRepository {
 
     async getUserById(userID) {
         try{
-         const user=await UserModel.findById(userID)
+         const user=await UserModel.findById(userID).select("-password")
          return user;
         }catch(err){
 
