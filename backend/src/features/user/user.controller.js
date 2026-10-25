@@ -25,7 +25,8 @@ export default class UserController {
 
   async signUp(req, res, next) {
     const {
-      name,
+      firstName,
+      lastName,
       email,
       password,
       type,
@@ -33,12 +34,13 @@ export default class UserController {
     try {
 
       const hashedPassword = await bcrypt.hash(password, 12)
-      const user = new UserModel(
-        name,
+      const user = {
+        firstName,
+        lastName,
         email,
-        hashedPassword,
+        password: hashedPassword,
         type
-      );
+      };
       await this.userRepository.signUp(user);
       res.status(201).json({ success: true, message: 'Sign up successful', data: { user } });
     } catch (err) {
@@ -85,17 +87,34 @@ export default class UserController {
 
 
 
-  async getUser(req,res,next){
+  async getUser(req, res, next) {
 
+    const userID = req.userID;
+
+    try {
+      const user = await this.userRepository.getUserById(userID);
+      res.status(200).json({ success: true, message: 'User fetched successfully', data: { user } })
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message })
+
+    }
+
+
+  }
+
+
+  async updateUser(req, res, next) {
+    const data = req.body
      const userID = req.userID;
 
-     try{
-      const user=await this.userRepository.getUserById(userID);
-      res.status(200).json({success:true,message:'User fetched successfully',data:{user}})  
-     }catch(error){
-      return res.status(500).json({success:false,message:error.message})
+ console.log("userId",userID)
+    try {
+      const updatedUser = await this.userRepository.updateUser(userID,data)
+      res.status(200).json({ success: true, message: "user updated Succesfully" })
 
-     }
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error })
+    }
 
 
   }

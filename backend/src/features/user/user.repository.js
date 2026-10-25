@@ -36,7 +36,7 @@ export default class UserRepository {
                 throw err;
             } else {
                 console.log(err);
-                throw new ApplicationError("Something went wrong with database", 500);
+                throw new ApplicationError(err, 500);
             }
 
         }
@@ -62,13 +62,39 @@ export default class UserRepository {
     }
 
 
-    async getUserById(userID) {
-        try{
-         const user=await UserModel.findById(userID).select("-password")
-         return user;
-        }catch(err){
+    async updateUser(userID, data) {
+        try {
+            const user = await UserModel.findById(userID)
+            console.log("getting error",user)
+            if (!user) {
+                throw new Error("No such user found");
+            }
 
-        throw new ApplicationError("Something went wrong with database", 500);
+            Object.assign(user, data)
+            await user.save()
+
+            return user
+
+        } catch (error) {
+             if (err instanceof mongoose.Error.ValidationError) {
+                throw err;
+            } else {
+                console.log(err);
+                throw new ApplicationError("Something get wrong", 500);
+            }
+        }
+
+    }
+
+
+    async getUserById(userID) {
+        try {
+            const user = await UserModel.findById(userID)
+            //  .select("-password")
+            return user;
+        } catch (err) {
+
+            throw new ApplicationError(err, 500);
         }
     }
 }

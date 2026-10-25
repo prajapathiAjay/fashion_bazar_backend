@@ -21,8 +21,12 @@ userRouter.post('/signin', (req, res)=>{
 userRouter.put('/resetPassword', jwtAuth, (req, res, next)=>{
     userController.resetPassword(req, res, next)
 });
-userRouter.get("/", jwtAuth, (req, res, next)=>{
+userRouter.post("/", jwtAuth, (req, res, next)=>{
     userController.getUser(req, res, next)
 });
 
+userRouter.post("/update-user",jwtAuth,(req,res,next)=>{
+    userController.updateUser(req,res,next)
+
+})
 export default userRouter;
