@@ -16,6 +16,7 @@ export class LikeRepository{
     }
 
     async likeProduct(userId, productId){
+        console.log("userId", userId, "productId", productId);
         try{
             const newLike = new LikeModel({
                 user: new ObjectId(userId),

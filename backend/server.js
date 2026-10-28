@@ -16,6 +16,7 @@ import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
 import likeRouter from './src/features/like/like.routes.js';
 import categoryRouter from './src/features/category/category.routes.js';
+import wishListRouter from './src/features/wishlist/wishlist.routes.js';
 import uploadRouter from './src/features/upload/upload.routes.js';
 // 2. Create Server
 const server = express();
@@ -51,6 +52,7 @@ server.use(
   swagger.setup(apiDocs)
 );
 
+
 server.use(loggerMiddleware);
 server.use('/api/orders',
   //  jwtAuth,
@@ -61,6 +63,10 @@ server.use(
   // jwtAuth,
   productRouter
 );
+server.use("/api/wishlist",
+  jwtAuth,
+  wishListRouter
+)
 server.use("/api/category",categoryRouter)
 server.use("/api/upload",
   // jwtAuth,
@@ -73,7 +79,7 @@ server.use(
 );
 server.use('/api/users', userRouter);
 server.use('/api/likes',
-  //  jwtAuth,
+   jwtAuth,
     likeRouter)
 
 // 3. Default request handler
