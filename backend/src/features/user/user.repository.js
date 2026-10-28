@@ -67,7 +67,7 @@ export default class UserRepository {
             const user = await UserModel.findById(userID)
             console.log("getting error",user)
             if (!user) {
-                throw new Error("No such user found");
+                throw new ApplicationError("user not found", 500);
             }
 
             Object.assign(user, data)
@@ -75,7 +75,7 @@ export default class UserRepository {
 
             return user
 
-        } catch (error) {
+        } catch (err) {
              if (err instanceof mongoose.Error.ValidationError) {
                 throw err;
             } else {

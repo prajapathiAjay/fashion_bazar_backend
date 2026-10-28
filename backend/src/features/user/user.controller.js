@@ -113,7 +113,7 @@ export default class UserController {
       res.status(200).json({ success: true, message: "user updated Succesfully" })
 
     } catch (error) {
-      return res.status(500).json({ success: false, message: error })
+      return res.status(500).json({ success: false, message: error.message })
     }
 
 
