@@ -10,5 +10,15 @@ export const cartSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref:'User'
     },
-    quantity: Number
+    size:{
+        type: String,
+        enum: ['XS', 'S', 'M', 'L', 'XL']
+
+    },
+    quantity:{
+        type: Number,
+        default: 1
+    }
+    
+
 }, { timestamps: true })
