@@ -43,17 +43,20 @@ export class CartItemsController {
 
   
   async delete(req, res) {
-    const userID = req.userID;
-    const cartItemID = req.params.id;
-    const isDeleted = await this.cartItemsRepository.delete(
-      userID,
-      cartItemID
-    );
-    if (!isDeleted) {
-      return res.status(404).send("Item not found");
-    }
-    return res
-      .status(200)
-      .send('Cart Item is removed');
+  
+
+ try{
+
+  const userID = req.userID;
+  const cartItemId= req.params.id;
+  const deletedItem = await this.cartItemsRepository.delete(userID, cartItemId);      
+return res.status(200).json({ success: true, message: "Cart item deleted successfully", data: deletedItem });
+
+ }catch (err) {
+      console.log(err);
+      return res.status(500).json({ success: false, message: err.message });
+    } 
+
+
   }
 }
