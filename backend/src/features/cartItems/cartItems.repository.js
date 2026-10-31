@@ -1,25 +1,25 @@
 import { ObjectId } from "mongodb";
 import { getDB } from "../../config/mongodb.js";
-
-
+import {ApplicationError} from "../../error-handler/applicationError.js";
+import { cartModel } from "./cartItems.schema.js";
 export default class CartItemsRepository {
 
     constructor() {
         this.collection = "cartItems";
     }
 
-    async add(productID, userID, quantity) {
+    async add(productID, userID, quantity=1) {
         try {
-            const db = getDB();
-            const collection = db.collection(this.collection)
-            const id = await this.getNextCounter(db);
+            // const db = getDB();
+            // const collection = db.collection(this.collection)
+            // const id = await this.getNextCounter(db);
             // find the document
             // either insert or update
             // Insertion.
-            await collection.updateOne(
+          return  await cartModel.updateOne(
                 { productID: new ObjectId(productID), userID: new ObjectId(userID) },
                 {
-                    $setOnInsert: { _id: id },
+                    // $setOnInsert: { _id: id },
                     $inc: {
                         quantity: quantity
                     }
@@ -28,18 +28,17 @@ export default class CartItemsRepository {
 
         } catch (err) {
             console.log(err);
-            throw new ApplicationError("Something went wrong with database", 500);
+            throw new ApplicationError(err, 500);
         }
     }
 
     async get(userID) {
         try {
-            const db = getDB();
-            const collection = db.collection(this.collection)
-            return await collection.find({ userID: new ObjectId(userID) }).toArray();
+           
+            return await cartModel.find({ userID: new ObjectId(userID) }).populate('productID', 'name price images').lean();
         } catch (err) {
             console.log(err);
-            throw new ApplicationError("Something went wrong with database", 500);
+            throw new ApplicationError(err, 500);
         }
     }
 

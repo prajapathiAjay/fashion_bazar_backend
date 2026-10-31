@@ -74,7 +74,7 @@ server.use("/api/upload",
 server.use(
   '/api/cartItems',
   loggerMiddleware,
-  // jwtAuth,
+  jwtAuth,
   cartRouter
 );
 server.use('/api/users', userRouter);
