@@ -19,4 +19,8 @@ cartRouter.get('/', (req, res, next)=>{
     cartController.get(req, res, next)
 });
 
+cartRouter.patch("/:id",(req,res,next)=>{
+    cartController.updateCart(req,res,next)
+})
+
 export default cartRouter;
