@@ -55,7 +55,7 @@ server.use(
 
 server.use(loggerMiddleware);
 server.use('/api/orders',
-  //  jwtAuth,
+   jwtAuth,
     orderRouter);
 
 server.use(

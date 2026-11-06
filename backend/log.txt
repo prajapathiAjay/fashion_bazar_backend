@@ -403,3 +403,71 @@
  Mon Nov 02 2026 18:47:53 GMT+0530 (India Standard Time) - /api/cartItems - {"productID":"6ae37e7dfb0fab9480a4235d"}
  Mon Nov 02 2026 18:47:53 GMT+0530 (India Standard Time) - / - {"productID":"6ae37e7dfb0fab9480a4235d"}
  Mon Nov 02 2026 18:48:10 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Thu Nov 05 2026 20:41:38 GMT+0530 (India Standard Time) - /api/category - {}
+ Thu Nov 05 2026 20:41:38 GMT+0530 (India Standard Time) - /api/products - {}
+ Thu Nov 05 2026 20:41:54 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:41:59 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Thu Nov 05 2026 20:42:00 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Thu Nov 05 2026 20:42:00 GMT+0530 (India Standard Time) - / - {}
+ Thu Nov 05 2026 20:45:35 GMT+0530 (India Standard Time) - /api/category - {}
+ Thu Nov 05 2026 20:45:35 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:45:35 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Thu Nov 05 2026 20:45:35 GMT+0530 (India Standard Time) - / - {}
+ Thu Nov 05 2026 20:47:53 GMT+0530 (India Standard Time) - /api/category - {}
+ Thu Nov 05 2026 20:47:53 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:47:53 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Thu Nov 05 2026 20:47:53 GMT+0530 (India Standard Time) - / - {}
+ Thu Nov 05 2026 20:48:13 GMT+0530 (India Standard Time) - /api/category - {}
+ Thu Nov 05 2026 20:48:13 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:48:13 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Thu Nov 05 2026 20:48:13 GMT+0530 (India Standard Time) - / - {}
+ Thu Nov 05 2026 20:49:18 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Thu Nov 05 2026 20:49:41 GMT+0530 (India Standard Time) - /api/users/update-user - {"addresses":[{"tag":"Home","line1":"Balaji nagar under jawahar,venkateshwara colony","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":false,"_id":"6ae0d54f1904f6ca77673be0","createdAt":"2026-10-27T16:46:07.313Z","updatedAt":"2026-10-27T16:46:07.313Z"},{"tag":"Home","line1":"Balaji nagar under jawahar,venkateshwara colony","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6ae743fc10645ba0c571c49c","createdAt":"2026-11-01T13:51:56.068Z","updatedAt":"2026-11-01T13:51:56.068Z"},{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pincode":"","pinCode":"500087"}]}
+ Thu Nov 05 2026 20:49:41 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:49:53 GMT+0530 (India Standard Time) - /api/users/update-user - {"addresses":[{"tag":"Home","line1":"Balaji nagar under jawahar,venkateshwara colony","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":false,"_id":"6ae0d54f1904f6ca77673be0","createdAt":"2026-10-27T16:46:07.313Z","updatedAt":"2026-10-27T16:46:07.313Z"},{"tag":"Home","line1":"Balaji nagar under jawahar,venkateshwara colony","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":false,"_id":"6ae743fc10645ba0c571c49c","createdAt":"2026-11-01T13:51:56.068Z","updatedAt":"2026-11-01T13:51:56.068Z"},{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"}]}
+ Thu Nov 05 2026 20:49:53 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:56:06 GMT+0530 (India Standard Time) - /api/category - {}
+ Thu Nov 05 2026 20:56:06 GMT+0530 (India Standard Time) - /api/users - {}
+ Thu Nov 05 2026 20:56:06 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Thu Nov 05 2026 20:56:06 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:26:10 GMT+0530 (India Standard Time) - /api/category - {}
+ Fri Nov 06 2026 22:26:10 GMT+0530 (India Standard Time) - /api/products - {}
+ Fri Nov 06 2026 22:26:10 GMT+0530 (India Standard Time) - /api/users - {}
+ Fri Nov 06 2026 22:26:31 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Fri Nov 06 2026 22:26:31 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:27:09 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:27:09 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:27:58 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Fri Nov 06 2026 22:28:05 GMT+0530 (India Standard Time) - /api/category - {}
+ Fri Nov 06 2026 22:28:05 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Fri Nov 06 2026 22:28:07 GMT+0530 (India Standard Time) - /api/users - {}
+ Fri Nov 06 2026 22:28:07 GMT+0530 (India Standard Time) - /api/products - {}
+ Fri Nov 06 2026 22:28:09 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Fri Nov 06 2026 22:28:09 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:28:20 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:28:20 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:28:26 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:28:26 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:32:59 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:32:59 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:38:29 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:38:29 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:38:30 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {}
+ Fri Nov 06 2026 22:38:30 GMT+0530 (India Standard Time) - /api/checkout/placeOrder - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:39:16 GMT+0530 (India Standard Time) - /api/category - {}
+ Fri Nov 06 2026 22:39:16 GMT+0530 (India Standard Time) - /api/users - {}
+ Fri Nov 06 2026 22:39:16 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Fri Nov 06 2026 22:39:16 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:39:19 GMT+0530 (India Standard Time) - /api/orders - {}
+ Fri Nov 06 2026 22:39:19 GMT+0530 (India Standard Time) - /api/orders - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:44:17 GMT+0530 (India Standard Time) - /api/category - {}
+ Fri Nov 06 2026 22:44:17 GMT+0530 (India Standard Time) - /api/users - {}
+ Fri Nov 06 2026 22:44:17 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Fri Nov 06 2026 22:44:17 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:45:58 GMT+0530 (India Standard Time) - /api/orders - {"address":{"tag":"Home","line1":"haunted area","line2":"line 2","city":"Hyderabad","state":"TS","pinCode":"500087","isDefault":true,"_id":"6aec9e8dc48aa90d7685481f","createdAt":"2026-11-05T15:19:41.837Z","updatedAt":"2026-11-05T15:19:41.837Z"},"shipMethod":"standard","payMethod":"cod"}
+ Fri Nov 06 2026 22:46:09 GMT+0530 (India Standard Time) - /api/category - {}
+ Fri Nov 06 2026 22:46:09 GMT+0530 (India Standard Time) - /api/users - {}
+ Fri Nov 06 2026 22:46:09 GMT+0530 (India Standard Time) - /api/cartItems - {}
+ Fri Nov 06 2026 22:46:09 GMT+0530 (India Standard Time) - / - {}
+ Fri Nov 06 2026 22:46:15 GMT+0530 (India Standard Time) - /api/wishlist - {}
+ Fri Nov 06 2026 22:48:04 GMT+0530 (India Standard Time) - /api/orders - {}

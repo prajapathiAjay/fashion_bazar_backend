@@ -9,4 +9,8 @@ orderRouter.post("/", (req, res, next)=>{
     orderController.placeOrder(req, res, next);
 })
 
+orderRouter.get("/", (req, res, next)=>{
+    orderController.getMyOrders(req, res, next);
+})
+
 export default orderRouter;
