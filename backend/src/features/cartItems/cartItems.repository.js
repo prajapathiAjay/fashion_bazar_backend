@@ -8,14 +8,14 @@ export default class CartItemsRepository {
         this.collection = "cartItems";
     }
 
-    async add(productID, userID,) {
+    async add(cartData) {
         try {
 
-            const exists = await cartModel.exists({ productID: new ObjectId(productID), userID: new ObjectId(userID) })
+            const exists = await cartModel.exists({ productID: new ObjectId(cartData.productID), userID: new ObjectId(cartData.userID) })
             if (exists) {
                 throw new ApplicationError("Product already exists in cart", 400);
             }
-            return await cartModel.create({ productID: new ObjectId(productID), userID: new ObjectId(userID) });
+            return await cartModel.create(cartData);
         } catch (err) {
             console.log(err);
             throw new ApplicationError(err, 500);

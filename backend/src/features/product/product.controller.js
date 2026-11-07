@@ -24,6 +24,7 @@ export default class ProductController {
   async addProduct(req, res) {
     try{
       console.log(req.body);
+      
     // const { name, price, sizes, categories } = req.body;
     // const newProduct = new ProductModel(name,null, parseFloat(price),
     // req.file.filename,categories, sizes.split(',')

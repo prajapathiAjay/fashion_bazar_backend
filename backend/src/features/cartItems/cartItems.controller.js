@@ -18,9 +18,15 @@ export class CartItemsController {
           message: "Valid product ID is required"
         });
       }
+      const cartData={
+        productID,
+        quantity,
+        size,
+        userID
+      }
 
 
-      const cart = await this.cartItemsRepository.add(productID, userID, quantity, size);
+      const cart = await this.cartItemsRepository.add(cartData);
       res.status(201).json({ success: true, message: "Item added to cart successfully", data: cart });
     } catch (err) {
       console.log(err);

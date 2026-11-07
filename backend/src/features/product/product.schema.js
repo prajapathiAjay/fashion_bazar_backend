@@ -17,7 +17,11 @@ export const productSchema = new mongoose.Schema(
     //   trim: true,
     // },
     
-
+   sellingPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     description: {
       type: String,
       required :true,
