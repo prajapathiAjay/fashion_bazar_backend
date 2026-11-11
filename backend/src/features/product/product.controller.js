@@ -39,26 +39,6 @@ export default class ProductController {
   }
   }
 
-  async rateProduct(req, res, next) {    
-    try{
-    const userID = req.userID;
-    const productID = req.body.productID;
-    const rating = req.body.rating;
-    await this.productRepository.rate(
-      userID,
-      productID,
-      rating
-    );
-    return res
-      .status(200)
-      .json({success:true,message:"Rating has been added"});
-  
-    }catch(err){
-      console.log(err);
-      console.log("Passing error to middleware");
-      next(err);
-    }
-    }
 
   async getOneProduct(req, res) {
     try{
