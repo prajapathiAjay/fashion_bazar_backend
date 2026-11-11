@@ -61,10 +61,10 @@ class ProductRepository{
     //   exclude      a product id to leave out
     //   sort         popular | newest | price_asc | price_desc | rating
     //   page, limit  pagination
-    async getAll({ q, category, categoryId, size, color, minPrice, maxPrice, onSale, exclude, sort, page = 1, limit = 12 } = {}){
+    async getAll({ q, category, categoryId, size, color, minPrice, maxPrice, onSale, includeInactive, exclude, sort, page = 1, limit = 12 } = {}){
         try{
             const empty = { items: [], total: 0, page: 1, pages: 1, limit };
-            const match = { isActive: { $ne: false } };
+            const match = includeInactive ? {} : { isActive: { $ne: false } };
 
             if(q){
                 const rx = new RegExp(escapeRegex(q), "i");

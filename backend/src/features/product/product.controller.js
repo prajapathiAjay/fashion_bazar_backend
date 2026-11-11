@@ -18,7 +18,9 @@ export default class ProductController {
       };
       const page = Math.max(1, parseInt(req.query.page, 10) || 1);
       // capped, so nobody can ask for 100000 products in one request
-      const limit = Math.min(48, Math.max(1, parseInt(req.query.limit, 10) || 12));
+      // the admin panel lists every product (inactive ones too), so it gets a higher cap
+      const includeInactive = req.query.includeInactive === "true";
+      const limit = Math.min(includeInactive ? 500 : 48, Math.max(1, parseInt(req.query.limit, 10) || 12));
 
       const result = await this.productRepository.getAll({
         q: text(req.query.q),
@@ -29,6 +31,7 @@ export default class ProductController {
         minPrice: number(req.query.minPrice),
         maxPrice: number(req.query.maxPrice),
         onSale: req.query.onSale === "true",
+        includeInactive,
         exclude: text(req.query.exclude),
         sort: text(req.query.sort),
         page,
