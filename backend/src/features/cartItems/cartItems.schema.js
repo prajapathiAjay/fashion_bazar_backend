@@ -12,7 +12,7 @@ export const cartSchema = new Schema({
     },
     size:{
         type: String,
-        enum: ['XS', 'S', 'M', 'L', 'XL']
+        enum: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
 
     },
     quantity:{

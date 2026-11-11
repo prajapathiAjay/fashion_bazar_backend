@@ -7,6 +7,20 @@ import { CategoryModel } from "../category/category.schema.js";
 
 const ProductModel = mongoose.model("Product", productSchema);
 
+// "M,L" -> ["M","L"]
+const toList = (value) => String(value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+
+// so a search like "shirt (new)" is treated as plain text, not as a regex
+const escapeRegex = (text) => String(text).replace(/[.*+?^$(){}|[\]\\]/g, "\\$&");
+
+// The price the shopper pays: sellingPrice when it is saved, otherwise price minus discount.
+const EFFECTIVE_PRICE = {
+    $ifNull: [
+        "$sellingPrice",
+        { $round: [{ $multiply: ["$price", { $divide: [{ $subtract: [100, { $ifNull: ["$discount", 0] }] }, 100] }] }, 0] },
+    ],
+};
+
 class ProductRepository{
 
     constructor(){
@@ -36,28 +50,116 @@ class ProductRepository{
         }
     }
 
-    async getAll(categorySlug){
+    // One place for every product list: shop page, search, category pages, new arrivals, deals.
+    // Every filter is optional - it is only added to the query when it was sent.
+    //   q            text search (name, brand, description)
+    //   category     category slug(s), comma separated: "mens,womens"
+    //   categoryId   category id(s), comma separated (used for "related products")
+    //   size, color  comma separated lists: "M,L"
+    //   minPrice, maxPrice   range on the price the shopper actually pays
+    //   onSale       only discounted products
+    //   exclude      a product id to leave out
+    //   sort         popular | newest | price_asc | price_desc | rating
+    //   page, limit  pagination
+    async getAll({ q, category, categoryId, size, color, minPrice, maxPrice, onSale, exclude, sort, page = 1, limit = 12 } = {}){
         try{
-            // const db = getDB();
-            // const collection = db.collection(this.collection);
-            // const products = await collection.find().toArray();
-            // console.log(products);
-            // return products;
+            const empty = { items: [], total: 0, page: 1, pages: 1, limit };
+            const match = { isActive: { $ne: false } };
 
-            // No slug (or "all") -> every product
-            if(!categorySlug || categorySlug === "all"){
-                return await ProductModel.find();
+            if(q){
+                const rx = new RegExp(escapeRegex(q), "i");
+                match.$or = [{ name: rx }, { brand: rx }, { description: rx }];
             }
 
-            // Products store category ids, so look the category up by slug first
-            const category = await CategoryModel.findOne({slug: categorySlug.toLowerCase()});
-            if(!category){
-                return [];
+            // Products store category ids, so slugs are looked up first. "all" means no category filter.
+            const slugs = toList(category).map((s) => s.toLowerCase()).filter((s) => s !== "all");
+            const categoryIds = toList(categoryId)
+                .filter((id) => mongoose.isValidObjectId(id))
+                .map((id) => new mongoose.Types.ObjectId(id));
+            if(slugs.length){
+                const found = await CategoryModel.find({ slug: { $in: slugs } }).select("_id");
+                if(!found.length) return empty;
+                categoryIds.push(...found.map((c) => c._id));
             }
-            return await ProductModel.find({categories: category._id});
+            if(categoryIds.length) match.categories = { $in: categoryIds };
+
+            const sizes = toList(size);
+            if(sizes.length) match.sizes = { $in: sizes };
+
+            // colours are free text in the admin panel, so match them ignoring case
+            const colors = toList(color);
+            if(colors.length) match.colors = { $in: colors.map((c) => new RegExp("^" + escapeRegex(c) + "$", "i")) };
+
+            if(onSale) match.discount = { $gt: 0 };
+
+            if(exclude && mongoose.isValidObjectId(exclude)){
+                match._id = { $ne: new mongoose.Types.ObjectId(exclude) };
+            }
+
+            const priceMatch = {};
+            if(minPrice != null) priceMatch.$gte = minPrice;
+            if(maxPrice != null) priceMatch.$lte = maxPrice;
+
+            // whitelist: only these sort keys are accepted from the URL
+            const SORTS = {
+                popular:    { "rating.count": -1, createdAt: -1, _id: -1 },
+                newest:     { createdAt: -1, _id: -1 },
+                price_asc:  { effectivePrice: 1, _id: 1 },
+                price_desc: { effectivePrice: -1, _id: -1 },
+                rating:     { "rating.average": -1, "rating.count": -1, _id: -1 },
+            };
+
+            const [result] = await ProductModel.aggregate([
+                { $match: match },
+                // older products have no sellingPrice, so work it out from price and discount
+                { $addFields: { effectivePrice: EFFECTIVE_PRICE } },
+                ...(Object.keys(priceMatch).length ? [{ $match: { effectivePrice: priceMatch } }] : []),
+                { $facet: {
+                    // one page of products
+                    items: [
+                        { $sort: SORTS[sort] || SORTS.popular },
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                    ],
+                    // how many products match in total (for the page numbers)
+                    meta: [{ $count: "total" }],
+                } },
+            ]);
+
+            const total = result?.meta?.[0]?.total ?? 0;
+            return {
+                items: result?.items ?? [],
+                total,
+                page,
+                pages: Math.max(1, Math.ceil(total / limit)),
+                limit,
+            };
         }catch(err){
             console.log(err);
-            throw new ApplicationError(err, 200);    
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
+    // The sizes, colours and highest price that exist, so the shop only offers filters that can match.
+    async getFilterOptions(){
+        try{
+            const active = { isActive: { $ne: false } };
+            const [sizes, colors, priceRows] = await Promise.all([
+                ProductModel.distinct("sizes", active),
+                ProductModel.distinct("colors", active),
+                ProductModel.aggregate([
+                    { $match: active },
+                    { $group: { _id: null, max: { $max: EFFECTIVE_PRICE } } },
+                ]),
+            ]);
+            return {
+                sizes: sizes.filter(Boolean),
+                colors: colors.filter(Boolean),
+                maxPrice: priceRows[0]?.max ?? 0,
+            };
+        }catch(err){
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
         }
     }
 

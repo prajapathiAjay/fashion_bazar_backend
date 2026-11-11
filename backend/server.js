@@ -19,6 +19,7 @@ import categoryRouter from './src/features/category/category.routes.js';
 import wishListRouter from './src/features/wishlist/wishlist.routes.js';
 import uploadRouter from './src/features/upload/upload.routes.js';
 import reviewRouter from './src/features/review/review.routes.js';
+import contactRouter from './src/features/contact/contact.routes.js';
 // 2. Create Server
 const server = express();
 
@@ -81,6 +82,7 @@ server.use(
 server.use('/api/users', userRouter);
 
 server.use("/api/review",reviewRouter)
+server.use("/api/contact",contactRouter)
 server.use('/api/likes',
    jwtAuth,
     likeRouter)

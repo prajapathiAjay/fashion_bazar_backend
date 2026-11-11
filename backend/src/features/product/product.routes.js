@@ -20,6 +20,13 @@ productRouter.get(
     productController.filterProducts(req, res)
 } 
 );
+// must stay above '/:id', otherwise "filter-options" would be read as a product id
+productRouter.get(
+  '/filter-options',
+  (req, res)=>{
+    productController.getFilterOptions(req, res)
+}
+);
 productRouter.get(
   '/',
   (req, res)=>{

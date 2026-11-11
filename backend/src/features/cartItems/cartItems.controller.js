@@ -49,7 +49,7 @@ export class CartItemsController {
         }
 
         if (size !== undefined) {
-            const allowedSizes = ["S", "M", "L", "XL"];
+            const allowedSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
             if (!allowedSizes.includes(size)) {
                 return res.status(400).send("Invalid size");
             }
