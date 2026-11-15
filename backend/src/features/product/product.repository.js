@@ -172,7 +172,36 @@ class ProductRepository{
             return await ProductModel.findById(id)
         }catch(err){
             console.log(err);
-            throw new ApplicationError("Something went wrong with database", 500);    
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
+    // Changes only the fields that were sent. Returns the updated product, or null if the id doesn't exist.
+    async update(id, data){
+        try{
+            return await ProductModel.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+        }catch(err){
+            console.log(err);
+            throw new ApplicationError(err.message, 500);
+        }
+    }
+
+    // Deletes the product and everything that points at it (bag items, wishlist items, reviews),
+    // so no page is left holding a product that no longer exists. Past orders keep their own copy.
+    async delete(id){
+        try{
+            const deleted = await ProductModel.findByIdAndDelete(id);
+            if(!deleted) return null;
+            const productId = deleted._id;
+            await Promise.all([
+                mongoose.model("Cart").deleteMany({ productID: productId }),
+                mongoose.model("Wishlist").deleteMany({ productId }),
+                mongoose.model("Review").deleteMany({ product: productId }),
+            ]);
+            return deleted;
+        }catch(err){
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
         }
     }
 

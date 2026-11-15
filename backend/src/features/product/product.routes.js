@@ -51,6 +51,15 @@ productRouter.get(
     productController.getOneProduct(req, res)
 } );
 
+// used by the admin panel's Edit page and Delete action
+productRouter.patch('/:id', (req, res)=>{
+    productController.updateProduct(req, res)
+});
+
+productRouter.delete('/:id', (req, res)=>{
+    productController.deleteProduct(req, res)
+});
+
 
 
 

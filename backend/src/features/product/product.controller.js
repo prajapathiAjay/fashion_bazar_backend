@@ -1,5 +1,6 @@
 import ProductModel from './product.model.js';
 import ProductRepository from './product.repository.js';
+import mongoose from 'mongoose';
 
 export default class ProductController {
 
@@ -91,6 +92,48 @@ export default class ProductController {
     return res.status(200).json({success:false,message:"Something went wrong"});
   }
 }
+
+  // PATCH /api/products/:id   (body: any of the product fields)
+  async updateProduct(req, res) {
+    try{
+      const id = req.params.id;
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({success:false,message:"Invalid product id"});
+      }
+      // only these fields can be changed from the outside
+      const allowed = ["name","summary","description","brand","price","sellingPrice","discount","stock","isActive","categories","sizes","colors","images"];
+      const changes = {};
+      for (const field of allowed) {
+        if (req.body[field] !== undefined) changes[field] = req.body[field];
+      }
+      const product = await this.productRepository.update(id, changes);
+      if (!product) {
+        return res.status(404).json({success:false,message:"Product not found"});
+      }
+      return res.status(200).json({success:true,message:"Product updated successfully", data:product});
+    }catch(err){
+      console.log(err);
+      return res.status(500).json({success:false,message:err.message || "Something went wrong"});
+    }
+  }
+
+  // DELETE /api/products/:id
+  async deleteProduct(req, res) {
+    try{
+      const id = req.params.id;
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({success:false,message:"Invalid product id"});
+      }
+      const product = await this.productRepository.delete(id);
+      if (!product) {
+        return res.status(404).json({success:false,message:"Product not found"});
+      }
+      return res.status(200).json({success:true,message:"Product deleted successfully", data:product});
+    }catch(err){
+      console.log(err);
+      return res.status(500).json({success:false,message:"Something went wrong"});
+    }
+  }
 
   async filterProducts(req, res) {
     try{  
