@@ -18,6 +18,7 @@ const addressSchema = new mongoose.Schema({
     city: {
         type: String
     },
+
     state: {
         type: String
     },
@@ -52,5 +53,5 @@ export const userSchema = new mongoose.Schema({
     phone: { type: String },
     dob: { type: String },
     addresses: [addressSchema],
-    type: { type: String, enum: ['Customer', 'Seller'] }
+    type: { type: String, enum: ["user","admin"] , default:"user"}
 }, { timestamps: true })
