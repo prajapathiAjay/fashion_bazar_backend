@@ -2,67 +2,42 @@ import mongoose from "mongoose";
 import { OrderModel } from "./order.schema.js";
 import { cartModel } from "../cartItems/cartItems.schema.js";
 import { productSchema } from "../product/product.schema.js";
-import { userSchema } from "../user/user.schema.js";
 import { ApplicationError } from "../../error-handler/applicationError.js";
+import buildOrderData from "../../helper/buildOrderData.js";
 
-// Reuse the models if product/user repositories already registered them
+// Reuse the model if the product repository already registered it
 const ProductModel = mongoose.models.Product || mongoose.model("Product", productSchema);
-const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
-
-// Same rule as the checkout page
-const getShippingCost = (shippingMethod, subTotal) => {
-    if (shippingMethod === "express") return 199;
-    return subTotal >= 999 ? 0 : 99;
-};
 
 export default class OrderRepository {
 
+    // Cash on delivery
     // data = { address, shipMethod, payMethod } from the checkout page
     async placeOrder(userId, data = {}) {
-        const { address, shipMethod = "standard", payMethod } = data;
+        const { shipMethod = "standard", payMethod } = data;
 
         if (payMethod !== "cod") {
             throw new ApplicationError("Only cash on delivery is available right now", 400);
         }
-        if (!["standard", "express"].includes(shipMethod)) {
-            throw new ApplicationError("Invalid shipping method", 400);
-        }
 
-        // 1. Load the user and pick the address from their saved addresses
-        //    (don't trust the address object coming from the browser)
-        const user = await UserModel.findById(userId);
-        if (!user) throw new ApplicationError("User not found", 404);
+        // 1. Validate and calculate (nothing saved yet)
+        const orderData = await buildOrderData(userId, data);
 
-        const savedAddress = user.addresses.id(address?._id);
-        if (!savedAddress) throw new ApplicationError("Please select a valid address", 400);
+        // 2. Reduce stock, save the order, clear the cart
+        return await this.createOrderAndReduceStock(userId, orderData, {
+            shipMethod,
+            paymentMethod: "cod",
+            paymentStatus: "Pending",   // COD is paid on delivery
+        });
+    }
 
-        // 2. Get the cart with product details
-        const cartItems = await cartModel.find({ userID: userId }).populate("productID");
-        if (cartItems.length === 0) throw new ApplicationError("Your cart is empty", 400);
+    // Helper 2: the part that changes the database.
+    // orderData = what buildOrderData returned
+    // extra     = { shipMethod, paymentMethod, paymentStatus, paymentInfo? }
+    async createOrderAndReduceStock(userId, orderData, extra) {
+        const { items, shippingAddress, subTotal, shipping, totalAmount } = orderData;
+        const { shipMethod, paymentMethod, paymentStatus, paymentInfo } = extra;
 
-        const items = [];
-        for (const cartItem of cartItems) {
-            const product = cartItem.productID;
-            if (!product) throw new ApplicationError("A product in your cart no longer exists", 400);
-            if (product.stock < cartItem.quantity) {
-                throw new ApplicationError(`Only ${product.stock} left of ${product.name}`, 400);
-            }
-            items.push({
-                product: product._id,
-                name: product.name,
-                image: product.images?.[0],
-                price: product.price,
-                size: cartItem.size,
-                quantity: cartItem.quantity,
-            });
-        }
-
-        // 3. Calculate totals on the server
-        const subTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const shipping = getShippingCost(shipMethod, subTotal);
-        const totalAmount = subTotal + shipping;
-
-        // 4. Reduce stock. The {stock: {$gte}} check stops two orders buying the last piece.
+        // 1. Reduce stock. The {stock: {$gte}} check stops two orders buying the last piece.
         //    Your local MongoDB is not a replica set, so transactions aren't available:
         //    if one item fails, put back the stock already taken.
         const reduced = [];
@@ -78,29 +53,22 @@ export default class OrderRepository {
                 reduced.push(item);
             }
 
-            // 5. Create the order
+            // 2. Create the order
             const order = await OrderModel.create({
                 orderNumber: await this.getNextOrderNumber(),
                 user: userId,
                 items,
-                shippingAddress: {
-                    name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
-                    phone: user.phone,
-                    tag: savedAddress.tag,
-                    line1: savedAddress.line1,
-                    line2: savedAddress.line2,
-                    city: savedAddress.city,
-                    state: savedAddress.state,
-                    pinCode: savedAddress.pinCode,
-                },
+                shippingAddress,
                 shippingMethod: shipMethod,
-                paymentMethod: payMethod,
+                paymentMethod,
+                paymentStatus,
+                paymentInfo,
                 subTotal,
                 shipping,
                 totalAmount,
             });
 
-            // 6. Clear the cart
+            // 3. Clear the cart
             await cartModel.deleteMany({ userID: userId });
 
             return order;

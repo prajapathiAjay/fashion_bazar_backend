@@ -37,7 +37,12 @@ const orderSchema = new mongoose.Schema({
         enum: ["Pending", "Paid", "Failed", "Refunded"],
         default: "Pending",
     },
-    // paymentInfo: { ... }   <- add when you build Razorpay
+    //  <- add when you build Razorpay
+    paymentInfo: {
+        razorpayOrderId:   { type: String },
+        razorpayPaymentId: { type: String },
+        paidAt:            { type: Date },
+    },
 
     subTotal:    { type: Number, required: true },     // sum of price * quantity
     shipping:    { type: Number, required: true },     // 0 / 99 / 199
