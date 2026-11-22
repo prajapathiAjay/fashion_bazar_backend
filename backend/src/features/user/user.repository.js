@@ -107,4 +107,58 @@ export default class UserRepository {
             throw new ApplicationError(err, 500);
         }
     }
+
+    // ---------- Admin (view only) ----------
+
+    // Every shopper (not admins), newest first, with how many orders they placed
+    // and how much they spent (cancelled orders don't count as spent).
+    async getAllCustomers() {
+        return await UserModel.aggregate([
+            { $match: { type: { $ne: "admin" } } },
+            {
+                $lookup: {
+                    from: "orders",
+                    localField: "_id",
+                    foreignField: "user",
+                    as: "orders",
+                    pipeline: [{ $project: { totalAmount: 1, status: 1, createdAt: 1 } }],
+                },
+            },
+            {
+                $project: {
+                    firstName: 1, lastName: 1, email: 1, phone: 1, createdAt: 1,
+                    orderCount: { $size: "$orders" },
+                    totalSpent: {
+                        $sum: {
+                            $map: {
+                                input: { $filter: { input: "$orders", cond: { $ne: ["$$this.status", "Cancelled"] } } },
+                                in: "$$this.totalAmount",
+                            },
+                        },
+                    },
+                    lastOrderAt: { $max: "$orders.createdAt" },
+                },
+            },
+            { $sort: { createdAt: -1 } },
+        ]);
+    }
+
+    // One shopper with their saved addresses and all their orders (newest first)
+    async getCustomerById(customerId) {
+        if (!mongoose.Types.ObjectId.isValid(customerId)) {
+            throw new ApplicationError("Customer not found", 404);
+        }
+        const customer = await UserModel.findOne({ _id: customerId, type: { $ne: "admin" } })
+            .select("-password")
+            .lean();
+        if (!customer) throw new ApplicationError("Customer not found", 404);
+
+        const orders = await mongoose.connection.db.collection("orders")
+            .find({ user: customer._id })
+            .project({ orderNumber: 1, totalAmount: 1, status: 1, paymentStatus: 1, paymentMethod: 1, items: 1, createdAt: 1 })
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        return { ...customer, orders };
+    }
 }

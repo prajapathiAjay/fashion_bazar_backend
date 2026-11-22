@@ -2,6 +2,7 @@ import UserModel from './user.model.js';
 import jwt from 'jsonwebtoken';
 import UserRepository from './user.repository.js';
 import bcrypt from 'bcrypt';
+import { ApplicationError } from '../../error-handler/applicationError.js';
 
 export default class UserController {
 
@@ -154,6 +155,34 @@ export default class UserController {
 
 
 
+
+  // ---------- Admin (view only) ----------
+
+  // GET /api/admin/customers
+  async getAllCustomers(req, res, next) {
+    try {
+      const customers = await this.userRepository.getAllCustomers();
+      return res.status(200).json({ success: true, data: customers });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ success: false, message: "Could not load customers" });
+    }
+  }
+
+  // GET /api/admin/customers/:id
+  async getCustomerById(req, res, next) {
+    try {
+      const customer = await this.userRepository.getCustomerById(req.params.id);
+      return res.status(200).json({ success: true, data: customer });
+    } catch (error) {
+      const status = error instanceof ApplicationError ? error.code : 500;
+      if (status === 500) console.log(error);
+      return res.status(status).json({
+        success: false,
+        message: status === 500 ? "Could not load the customer" : error.message,
+      });
+    }
+  }
 }
 
 
