@@ -7,7 +7,15 @@ const reviewSchema = new Schema({
     // the headline is optional in the review form
     title: { type: String, trim: true, default: "" },
     comment: { type: String, required: true, trim: true },
-    helpful: { type: Number, default: 0 }
+    helpful: { type: Number, default: 0 },
+
+    // moderation (admin panel): hidden reviews don't show in the shop or count in the product rating
+    isHidden: { type: Boolean, default: false },
+    // public answer from the store, shown under the review
+    reply: {
+        text: { type: String, trim: true, maxLength: 1000 },
+        repliedAt: { type: Date },
+    },
 
 
 }, { timestamps: true })

@@ -17,6 +17,7 @@ import orderAdminRouter from './src/features/order/order.admin.routes.js';
 import customerAdminRouter from './src/features/user/user.admin.routes.js';
 import discountAdminRouter from './src/features/discount/discount.admin.routes.js';
 import { shippingRouter, shippingAdminRouter } from './src/features/shipping/shipping.routes.js';
+import reviewAdminRouter from './src/features/review/review.admin.routes.js';
 import { isAdmin } from './src/middlewares/IsAdmin.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
@@ -92,6 +93,11 @@ server.use('/api/admin/shipping',
   jwtAuth,
   isAdmin,
   shippingAdminRouter);
+// Admin panel: review moderation
+server.use('/api/admin/reviews',
+  jwtAuth,
+  isAdmin,
+  reviewAdminRouter);
 // Public: current delivery rates for cart / checkout
 server.use('/api/shipping', shippingRouter);
 
