@@ -15,7 +15,7 @@ export default class OrderRepository {
     // cod      -> creates the order right away
     // razorpay -> only creates a Razorpay order; our order is created after /verify-payment
     async placeOrder(userId, data = {}) {
-        const { address, shipMethod = "standard", payMethod } = data;
+        const { address, payMethod } = data;
 
         if (!["cod", "razorpay"].includes(payMethod)) {
             throw new ApplicationError("Invalid payment method", 400);
@@ -25,12 +25,11 @@ export default class OrderRepository {
         const orderData = await buildOrderData(userId, data);
 
         if (payMethod === "razorpay") {
-            return await this.createRazorpayOrder(userId, orderData, address, shipMethod);
+            return await this.createRazorpayOrder(userId, orderData, address, orderData.shippingInfo.code);
         }
 
         // 2. COD: reduce stock, save the order, clear the cart
         return await this.createOrderAndReduceStock(userId, orderData, {
-            shipMethod,
             paymentMethod: "cod",
             paymentStatus: "Pending",   // COD is paid on delivery
         });
@@ -159,7 +158,6 @@ export default class OrderRepository {
 
             // 4. Save the order as Paid (reduces stock and clears the cart too)
             return await this.createOrderAndReduceStock(ownerId, orderData, {
-                shipMethod: rzpOrder.notes.shipMethod,
                 paymentMethod: "razorpay",
                 paymentStatus: "Paid",
                 paymentInfo: {
@@ -215,10 +213,10 @@ export default class OrderRepository {
 
     // Helper 2: the part that changes the database.
     // orderData = what buildOrderData returned
-    // extra     = { shipMethod, paymentMethod, paymentStatus, paymentInfo? }
+    // extra     = { paymentMethod, paymentStatus, paymentInfo? }
     async createOrderAndReduceStock(userId, orderData, extra) {
-        const { items, shippingAddress, subTotal, shipping, totalAmount } = orderData;
-        const { shipMethod, paymentMethod, paymentStatus, paymentInfo } = extra;
+        const { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo } = orderData;
+        const { paymentMethod, paymentStatus, paymentInfo } = extra;
 
         // 1. Reduce stock. The {stock: {$gte}} check stops two orders buying the last piece.
         //    Your local MongoDB is not a replica set, so transactions aren't available:
@@ -242,7 +240,9 @@ export default class OrderRepository {
                 user: userId,
                 items,
                 shippingAddress,
-                shippingMethod: shipMethod,
+                shippingMethod: shippingInfo.code,
+                shippingMethodName: shippingInfo.name,
+                deliveryDays: { min: shippingInfo.minDays, max: shippingInfo.maxDays },
                 paymentMethod,
                 paymentStatus,
                 paymentInfo,

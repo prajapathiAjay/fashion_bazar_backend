@@ -13,18 +13,13 @@ const shippingRepo = new ShippingRepository();
 // Validates the checkout and calculates everything for an order.
 // Does NOT change the database (no stock change, no order, cart untouched).
 // data = { address, shipMethod } from the checkout page
+// shipMethod = the code of a delivery option from the admin's Shipping page ("standard", "same-day", ...);
+// if it's missing, the first enabled option is used
 export default async function buildOrderData(userId, data = {}) {
-    const { address, shipMethod = "standard" } = data;
+    const { address, shipMethod } = data;
 
-    if (!["standard", "express"].includes(shipMethod)) {
-        throw new ApplicationError("Invalid shipping method", 400);
-    }
-
-    // Current rates set by the admin (Shipping page)
-    const shippingSettings = await shippingRepo.get();
-    if (!shippingSettings[shipMethod]?.enabled) {
-        throw new ApplicationError(`${shipMethod === "express" ? "Express" : "Standard"} delivery is not available right now`, 400);
-    }
+    // The chosen delivery option (must exist and be switched on)
+    const shippingMethod = await shippingRepo.getForCheckout(shipMethod);
 
     // 1. Load the user and pick the address from their saved addresses
     //    (don't trust the address object coming from the browser)
@@ -57,7 +52,7 @@ export default async function buildOrderData(userId, data = {}) {
 
     // 3. Calculate totals on the server
     const subTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shipping = calcShippingCost(shippingSettings, shipMethod, subTotal);
+    const shipping = calcShippingCost(shippingMethod, subTotal);
     const totalAmount = subTotal + shipping;
 
     // 4. Copy of the address for the order, so later edits to the user's address don't change it
@@ -72,7 +67,15 @@ export default async function buildOrderData(userId, data = {}) {
         pinCode: savedAddress.pinCode,
     };
 
-    return { items, shippingAddress, subTotal, shipping, totalAmount };
+    // what the order remembers about the delivery option (it may be renamed or deleted later)
+    const shippingInfo = {
+        code: shippingMethod.code,
+        name: shippingMethod.name,
+        minDays: shippingMethod.minDays,
+        maxDays: shippingMethod.maxDays,
+    };
+
+    return { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo };
 }
 
 

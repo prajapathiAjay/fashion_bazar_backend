@@ -1,30 +1,34 @@
 import mongoose from "mongoose";
 
-// Settings for one delivery method (standard or express)
-const methodSchema = new mongoose.Schema({
-    enabled:   { type: Boolean, default: true },
-    price:     { type: Number, required: true, min: 0 },      // ₹ charged
-    freeAbove: { type: Number, min: 0, default: null },        // free when subtotal >= this; null = never free
-    minDays:   { type: Number, required: true, min: 0 },       // delivery estimate shown to shoppers
-    maxDays:   { type: Number, required: true, min: 0 },
-}, { _id: false });
+// One delivery option shoppers can pick at checkout (Standard, Express, Same day, ...)
+const shippingMethodSchema = new mongoose.Schema({
+    // short id saved on orders and sent by checkout, e.g. "standard", "same-day".
+    // Made from the name when created and never changed, so old orders keep pointing at it.
+    code: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [/^[a-z0-9-]{2,30}$/, "Code must be 2-30 lowercase letters, numbers or dashes"],
+    },
+    name:        { type: String, required: true, trim: true, maxLength: 40 },   // "Express"
+    description: { type: String, trim: true, maxLength: 80 },                   // "Fastest, for urgent orders"
 
-// Only ONE settings document exists (key: "default").
-// The method names stay fixed because orders store shippingMethod as "standard" | "express".
-const shippingSettingsSchema = new mongoose.Schema({
-    key: { type: String, default: "default", unique: true },
-    standard: { type: methodSchema, default: () => ({ enabled: true, price: 99, freeAbove: 999, minDays: 4, maxDays: 6 }) },
-    express:  { type: methodSchema, default: () => ({ enabled: true, price: 199, freeAbove: null, minDays: 1, maxDays: 2 }) },
+    price:     { type: Number, required: true, min: 0 },   // ₹ charged
+    freeAbove: { type: Number, min: 0, default: null },    // free when subtotal >= this; null = never free
+    minDays:   { type: Number, required: true, min: 0 },   // delivery estimate shown to shoppers
+    maxDays:   { type: Number, required: true, min: 0 },
+
+    enabled:   { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },               // smaller = shown first; the first one is the default
 }, { timestamps: true });
 
-export const ShippingSettingsModel = mongoose.model("ShippingSettings", shippingSettingsSchema);
+export const ShippingMethodModel = mongoose.model("ShippingMethod", shippingMethodSchema);
 
-export const SHIPPING_METHODS = ["standard", "express"];
-
-// The one rule used everywhere (checkout totals, order creation, Razorpay amount)
-export const calcShippingCost = (settings, method, subTotal) => {
-    const m = settings?.[method];
-    if (!m) return 0;
-    if (m.freeAbove !== null && m.freeAbove !== undefined && subTotal >= m.freeAbove) return 0;
-    return m.price;
+// The one rule used everywhere (cart, checkout, order creation, Razorpay amount)
+export const calcShippingCost = (method, subTotal) => {
+    if (!method) return 0;
+    if (method.freeAbove !== null && method.freeAbove !== undefined && subTotal >= method.freeAbove) return 0;
+    return method.price;
 };

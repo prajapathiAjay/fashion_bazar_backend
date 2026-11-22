@@ -29,7 +29,11 @@ const orderSchema = new mongoose.Schema({
         pinCode: { type: String, required: true },
     },
 
-    shippingMethod: { type: String, enum: ["standard", "express"], default: "standard" },
+    // delivery option chosen at checkout (code from the Shipping page, e.g. "standard", "same-day").
+    // The name and days are copied so the order still shows them if the option is renamed or deleted.
+    shippingMethod:     { type: String, default: "standard" },
+    shippingMethodName: { type: String },
+    deliveryDays:       { min: { type: Number }, max: { type: Number } },
 
     paymentMethod: { type: String, enum: ["cod", "razorpay"], required: true },
     paymentStatus: {
