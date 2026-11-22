@@ -2,15 +2,13 @@ import mongoose from "mongoose";
 import { ApplicationError } from "../error-handler/applicationError.js";
 import { cartModel } from "../features/cartItems/cartItems.schema.js";
 import { userSchema } from "../features/user/user.schema.js";
+import ShippingRepository from "../features/shipping/shipping.repository.js";
+import { calcShippingCost } from "../features/shipping/shipping.schema.js";
 
 // Reuse the model if the user repository already registered it
 const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
-// Same rule as the checkout page
-export const getShippingCost = (shippingMethod, subTotal) => {
-    if (shippingMethod === "express") return 199;
-    return subTotal >= 999 ? 0 : 99;
-};
+const shippingRepo = new ShippingRepository();
 
 // Validates the checkout and calculates everything for an order.
 // Does NOT change the database (no stock change, no order, cart untouched).
@@ -20,6 +18,12 @@ export default async function buildOrderData(userId, data = {}) {
 
     if (!["standard", "express"].includes(shipMethod)) {
         throw new ApplicationError("Invalid shipping method", 400);
+    }
+
+    // Current rates set by the admin (Shipping page)
+    const shippingSettings = await shippingRepo.get();
+    if (!shippingSettings[shipMethod]?.enabled) {
+        throw new ApplicationError(`${shipMethod === "express" ? "Express" : "Standard"} delivery is not available right now`, 400);
     }
 
     // 1. Load the user and pick the address from their saved addresses
@@ -53,7 +57,7 @@ export default async function buildOrderData(userId, data = {}) {
 
     // 3. Calculate totals on the server
     const subTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shipping = getShippingCost(shipMethod, subTotal);
+    const shipping = calcShippingCost(shippingSettings, shipMethod, subTotal);
     const totalAmount = subTotal + shipping;
 
     // 4. Copy of the address for the order, so later edits to the user's address don't change it

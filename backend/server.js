@@ -16,6 +16,7 @@ import razorpayWebhookRouter from './src/features/order/razorpayWebhook.routes.j
 import orderAdminRouter from './src/features/order/order.admin.routes.js';
 import customerAdminRouter from './src/features/user/user.admin.routes.js';
 import discountAdminRouter from './src/features/discount/discount.admin.routes.js';
+import { shippingRouter, shippingAdminRouter } from './src/features/shipping/shipping.routes.js';
 import { isAdmin } from './src/middlewares/IsAdmin.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
@@ -86,6 +87,13 @@ server.use('/api/admin/discounts',
   jwtAuth,
   isAdmin,
   discountAdminRouter);
+// Admin panel: delivery rates
+server.use('/api/admin/shipping',
+  jwtAuth,
+  isAdmin,
+  shippingAdminRouter);
+// Public: current delivery rates for cart / checkout
+server.use('/api/shipping', shippingRouter);
 
 server.use(
   '/api/products',
