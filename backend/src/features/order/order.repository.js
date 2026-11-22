@@ -271,6 +271,90 @@ export default class OrderRepository {
         return await OrderModel.find({ user: userId }).sort({ createdAt: -1 });
     }
 
+    // ---------- Admin (view only) ----------
+
+    // Every order in the store, newest first, with the customer's name and email
+    async getAllOrders() {
+        return await OrderModel.find()
+            .populate("user", "firstName lastName email")
+            .sort({ createdAt: -1 });
+    }
+
+    // One order by its _id, with the customer's details
+    async getOrderById(orderId) {
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new ApplicationError("Order not found", 404);
+        }
+        const order = await OrderModel.findById(orderId)
+            .populate("user", "firstName lastName email phone");
+        if (!order) throw new ApplicationError("Order not found", 404);
+        return order;
+    }
+
+    // Which status an order may move to from its current one.
+    // Orders only go forward; they can be cancelled until they are shipped.
+    // Delivered and Cancelled are final.
+    static NEXT_STATUSES = {
+        Ordered:   ["Packed", "Cancelled"],
+        Packed:    ["Shipped", "Cancelled"],
+        Shipped:   ["Delivered"],
+        Delivered: [],
+        Cancelled: [],
+    };
+
+    // Admin changes the order status.
+    // - Delivered + COD  -> the cash was collected, so payment becomes Paid
+    // - Cancelled        -> stock goes back; a paid online order is refunded through Razorpay
+    async updateOrderStatus(orderId, newStatus) {
+        const order = await this.getOrderById(orderId);
+        const from = order.status;
+
+        const allowed = OrderRepository.NEXT_STATUSES[from] ?? [];
+        if (!allowed.includes(newStatus)) {
+            throw new ApplicationError(`An order that is ${from} can't be changed to ${newStatus}`, 400);
+        }
+
+        const update = { status: newStatus };
+        if (newStatus === "Delivered" && order.paymentMethod === "cod") {
+            update.paymentStatus = "Paid";
+        }
+
+        // Only update if the status is still what we read: if two admins click at the same
+        // moment, only one wins (so stock is never put back twice).
+        const updated = await OrderModel.findOneAndUpdate(
+            { _id: order._id, status: from },
+            { $set: update },
+            { new: true }
+        ).populate("user", "firstName lastName email phone");
+        if (!updated) {
+            throw new ApplicationError("This order was just changed by someone else, please refresh", 409);
+        }
+
+        if (newStatus === "Cancelled") {
+            // put the pieces back on sale
+            for (const item of updated.items) {
+                await ProductModel.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
+            }
+
+            // the customer paid online -> give the money back
+            if (updated.paymentMethod === "razorpay" && updated.paymentStatus === "Paid") {
+                const paymentId = updated.paymentInfo?.razorpayPaymentId;
+                const refunded = paymentId
+                    ? await this.refundPayment(paymentId, `Order ${updated.orderNumber} cancelled by admin`)
+                    : false;
+                if (refunded) {
+                    updated.paymentStatus = "Refunded";
+                    await updated.save();
+                } else {
+                    // order stays cancelled; the admin is told to refund from the Razorpay dashboard
+                    return { order: updated, refundFailed: true };
+                }
+            }
+        }
+
+        return { order: updated, refundFailed: false };
+    }
+
     // BZ-10001, BZ-10002, ... using an atomic counter so two orders never get the same number
     async getNextOrderNumber() {
         const counter = await mongoose.connection.db.collection("counters").findOneAndUpdate(
