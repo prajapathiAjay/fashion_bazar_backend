@@ -15,6 +15,7 @@ import orderRouter from './src/features/order/order.routes.js';
 import razorpayWebhookRouter from './src/features/order/razorpayWebhook.routes.js';
 import orderAdminRouter from './src/features/order/order.admin.routes.js';
 import customerAdminRouter from './src/features/user/user.admin.routes.js';
+import discountAdminRouter from './src/features/discount/discount.admin.routes.js';
 import { isAdmin } from './src/middlewares/IsAdmin.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
@@ -80,6 +81,11 @@ server.use('/api/admin/customers',
   jwtAuth,
   isAdmin,
   customerAdminRouter);
+// Admin panel: coupon codes (logged in + type "admin" only)
+server.use('/api/admin/discounts',
+  jwtAuth,
+  isAdmin,
+  discountAdminRouter);
 
 server.use(
   '/api/products',
