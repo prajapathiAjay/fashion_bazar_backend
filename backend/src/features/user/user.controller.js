@@ -29,7 +29,7 @@ export default class UserController {
       lastName,
       email,
       password,
-      type,
+   
     } = req.body;
     try {
 
@@ -39,7 +39,7 @@ export default class UserController {
         lastName,
         email,
         password: hashedPassword,
-        type
+      
       };
       await this.userRepository.signUp(user);
       res.status(201).json({ success: true, message: 'Sign up successful', data: { user } });
@@ -84,7 +84,40 @@ export default class UserController {
       return res.status(500).json({ success: false, message: 'Something went wrong' });
     }
   }
+  async adminSignIn(req, res, next) {
+    try {
+      const { email, password } = req.body;
 
+      // 1. Find the user, only if they are an admin.
+      const user = await this.userRepository.findAdminByEmail(email);
+
+      // 2. Same message whether the email is wrong, not an admin, or the password is wrong,
+      //    so nobody can find out which admin emails exist.
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Incorrect Credentials' });
+      }
+
+      // 3. Create token.
+      const token = jwt.sign(
+        {
+          userID: user._id,
+          email: user.email,
+        },
+        'AIb6d35fvJM4O9pXqXQNla2jBCH9kuLz',
+        {
+          expiresIn: '1d',
+        }
+      );
+
+      // 4. Send token.
+      return res.status(200).json({ success: true, message: 'Sign in successful', data: { token } });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ success: false, message: 'Something went wrong' });
+    }
+  }
 
 
   async getUser(req, res, next) {

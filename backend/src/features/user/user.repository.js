@@ -61,6 +61,16 @@ export default class UserRepository {
         }
     }
 
+    // Returns the user only if they are an admin, otherwise null
+    async findAdminByEmail(email) {
+        try {
+            return await UserModel.findOne({ email, type: "admin" });
+        } catch (err) {
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
 
     async updateUser(userID, data) {
         try {

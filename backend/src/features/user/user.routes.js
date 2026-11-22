@@ -18,6 +18,9 @@ userRouter.post('/signup', (req, res, next)=>{
 userRouter.post('/signin', (req, res)=>{
     userController.signIn(req, res)
 });
+userRouter.post("/admin/signin",(req,res,next)=>{
+    userController.adminSignIn(req,res,next)
+})
 userRouter.put('/resetPassword', jwtAuth, (req, res, next)=>{
     userController.resetPassword(req, res, next)
 });
