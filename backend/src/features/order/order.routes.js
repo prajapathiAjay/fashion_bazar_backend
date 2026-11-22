@@ -5,6 +5,11 @@ const orderRouter = express.Router();
 
 const orderController = new OrderController();
 
+// after the Razorpay popup succeeds
+orderRouter.post("/verify-payment", (req, res, next)=>{
+    orderController.verifyPayment(req, res, next);
+})
+
 orderRouter.post("/", (req, res, next)=>{
     orderController.placeOrder(req, res, next);
 })

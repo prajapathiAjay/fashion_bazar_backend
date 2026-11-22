@@ -31,6 +31,32 @@ export default class OrderController {
         }
     }
 
+    async verifyPayment(req, res, next) {
+        try {
+            const order = await this.orderRepository.verifyPayment(req.userID, req.body);
+            return res.status(201).json({ success: true, message: "Payment verified, order is created", data: order });
+        } catch (error) {
+            const status = error instanceof ApplicationError ? error.code : 500;
+            return res.status(status).json({ success: false, message: error.message });
+        }
+    }
+
+    // Razorpay calls this. Always answer quickly: 200 = done, 400 = bad signature, 500 = retry later.
+    async razorpayWebhook(req, res, next) {
+        try {
+            const result = await this.orderRepository.handleWebhook(
+                req.rawBody,
+                req.headers["x-razorpay-signature"],
+                req.body
+            );
+            return res.status(200).json({ success: true, ...result });
+        } catch (error) {
+            console.log("Razorpay webhook error:", error.message);
+            const status = error instanceof ApplicationError ? error.code : 500;
+            return res.status(status).json({ success: false, message: error.message });
+        }
+    }
+
     async getMyOrders(req, res, next) {
         try {
             const orders = await this.orderRepository.getMyOrders(req.userID);

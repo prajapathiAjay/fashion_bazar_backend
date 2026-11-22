@@ -37,9 +37,11 @@ const orderSchema = new mongoose.Schema({
         enum: ["Pending", "Paid", "Failed", "Refunded"],
         default: "Pending",
     },
-    //  <- add when you build Razorpay
+    // filled only for online (Razorpay) orders
     paymentInfo: {
-        razorpayOrderId:   { type: String },
+        // unique: if /verify-payment and the webhook run at the same moment, only one order is saved.
+        // sparse: COD orders don't have this field, so they don't clash with each other.
+        razorpayOrderId:   { type: String, unique: true, sparse: true },
         razorpayPaymentId: { type: String },
         paidAt:            { type: Date },
     },

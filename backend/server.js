@@ -12,6 +12,7 @@ import loggerMiddleware from './src/middlewares/logger.middleware.js';
 import { ApplicationError } from './src/error-handler/applicationError.js';
 import {connectToMongoDB} from './src/config/mongodb.js';
 import orderRouter from './src/features/order/order.routes.js';
+import razorpayWebhookRouter from './src/features/order/razorpayWebhook.routes.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
 import likeRouter from './src/features/like/like.routes.js';
@@ -44,7 +45,12 @@ server.use((req, res, next) => {
   next();
 });
 
-server.use(express.json());
+// Also keep the exact request bytes: the Razorpay webhook signature is checked against them
+server.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 // Bearer <token>
 // for all requests related to product, redirect to product routes.
 // localhost:3200/api/products
@@ -56,6 +62,8 @@ server.use(
 
 
 server.use(loggerMiddleware);
+// Called by Razorpay's servers, so no jwtAuth (checked by signature instead)
+server.use('/api/razorpay/webhook', razorpayWebhookRouter);
 server.use('/api/orders',
    jwtAuth,
     orderRouter);
