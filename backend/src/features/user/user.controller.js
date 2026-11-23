@@ -2,6 +2,7 @@ import UserModel from './user.model.js';
 import jwt from 'jsonwebtoken';
 import UserRepository from './user.repository.js';
 import bcrypt from 'bcrypt';
+import { getJwtSecret } from '../../config/jwtSecret.js';
 import { ApplicationError } from '../../error-handler/applicationError.js';
 
 export default class UserController {
@@ -67,7 +68,7 @@ export default class UserController {
               userID: user._id,
               email: user.email,
             },
-            'AIb6d35fvJM4O9pXqXQNla2jBCH9kuLz',
+            getJwtSecret(),
             {
               expiresIn: '7d',
             }
@@ -106,7 +107,7 @@ export default class UserController {
           userID: user._id,
           email: user.email,
         },
-        'AIb6d35fvJM4O9pXqXQNla2jBCH9kuLz',
+        getJwtSecret(),
         {
           expiresIn: '1d',
         }

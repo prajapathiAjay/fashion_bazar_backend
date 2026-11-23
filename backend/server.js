@@ -2,6 +2,7 @@
 import express from 'express';
 import swagger from 'swagger-ui-express';
 import dotenv from "dotenv";
+import { getJwtSecret } from './src/config/jwtSecret.js';
 
 import productRouter from './src/features/product/product.routes.js';
 import userRouter from './src/features/user/user.routes.js';
@@ -32,6 +33,9 @@ const server = express();
 
 // load all the environment variables in application
 dotenv.config();
+
+// Stop right away if the login-token key is missing, instead of failing on the first sign-in
+getJwtSecret();
 
 // CORS policy configuration
 const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173'];

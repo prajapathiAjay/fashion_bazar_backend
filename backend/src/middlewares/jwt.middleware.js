@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/jwtSecret.js';
 
 const jwtAuth = (req, res, next) => {
   // 1. Read the token.
@@ -16,7 +17,7 @@ const jwtAuth = (req, res, next) => {
   try {
     const payload = jwt.verify(
       token,
-      'AIb6d35fvJM4O9pXqXQNla2jBCH9kuLz'
+      getJwtSecret()
     );
     req.userID = payload.userID;
   } catch (err) {
