@@ -1,5 +1,4 @@
 import { ObjectId } from "mongodb";
-import { getDB } from "../../config/mongodb.js";
 import { ApplicationError } from "../../error-handler/applicationError.js";
 import { cartModel } from "./cartItems.schema.js";
 export default class CartItemsRepository {

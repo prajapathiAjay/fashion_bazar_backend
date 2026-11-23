@@ -1,4 +1,3 @@
-import ProductModel from './product.model.js';
 import ProductRepository from './product.repository.js';
 import mongoose from 'mongoose';
 
@@ -61,12 +60,6 @@ export default class ProductController {
 
   async addProduct(req, res) {
     try{
-      console.log(req.body);
-      
-    // const { name, price, sizes, categories } = req.body;
-    // const newProduct = new ProductModel(name,null, parseFloat(price),
-    // req.file.filename,categories, sizes.split(',')
-    // );
     const createdProduct = await this.productRepository.add(req.body);
    return  res.status(201).json({success:true,message:"Product added successfully", data:createdProduct});
   }catch(err){
@@ -81,6 +74,10 @@ export default class ProductController {
   async getOneProduct(req, res) {
     try{
       const id = req.params.id;
+      // a mistyped link like /products/abc isn't a real id: answer "not found" instead of crashing
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(404).json({success:false,message:"Product not found"});
+      }
       const product = await this.productRepository.get(id);
       if (!product) {
         return res.status(404).json({success:false,message:"Product not found"});
@@ -133,31 +130,5 @@ export default class ProductController {
       console.log(err);
       return res.status(500).json({success:false,message:"Something went wrong"});
     }
-  }
-
-  async filterProducts(req, res) {
-    try{  
-    const minPrice = req.query.minPrice;
-    const maxPrice = req.query.maxPrice;
-    const categories = req.query.categories;
-    const result = await this.productRepository.filter(
-      minPrice,
-      categories
-    );
-    res.status(200).json({success:true,message:"Products filtered successfully", data:result});
-  }catch(err){
-    console.log(err);
-    return res.status(200).json({success:false,message:"Something went wrong"});
-  }
-  }
-
-  async averagePrice(req, res, next){
-    try{
-      const result =await this.productRepository.averageProductPricePerCategory();
-      res.status(200).json({success:true,message:"Average prices fetched successfully", data:result});
-    }catch(err){
-    console.log(err);
-    return res.status(200).json({success:false,message:"Something went wrong"});
-  }
   }
 }

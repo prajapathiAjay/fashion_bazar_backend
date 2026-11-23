@@ -11,7 +11,6 @@ import cartRouter from './src/features/cartItems/cartItems.routes.js';
 import apiDocs from './swagger.json' with { type: 'json' };
 import loggerMiddleware from './src/middlewares/logger.middleware.js';
 import { ApplicationError } from './src/error-handler/applicationError.js';
-import {connectToMongoDB} from './src/config/mongodb.js';
 import orderRouter from './src/features/order/order.routes.js';
 import razorpayWebhookRouter from './src/features/order/razorpayWebhook.routes.js';
 import orderAdminRouter from './src/features/order/order.admin.routes.js';
@@ -23,7 +22,6 @@ import reviewAdminRouter from './src/features/review/review.admin.routes.js';
 import { isAdmin } from './src/middlewares/IsAdmin.js';
 import { connectUsingMongoose } from './src/config/mongooseConfig.js';
 import mongoose from 'mongoose';
-import likeRouter from './src/features/like/like.routes.js';
 import categoryRouter from './src/features/category/category.routes.js';
 import wishListRouter from './src/features/wishlist/wishlist.routes.js';
 import uploadRouter from './src/features/upload/upload.routes.js';
@@ -133,9 +131,6 @@ server.use('/api/users', userRouter);
 
 server.use("/api/review",reviewRouter)
 server.use("/api/contact",contactRouter)
-server.use('/api/likes',
-   jwtAuth,
-    likeRouter)
 
 
 
@@ -176,7 +171,6 @@ server.use((req, res) => {
 // 5. Specify port.
 server.listen(3200, ()=>{
   console.log('Server is running at 3200');
-  // connectToMongoDB();
   connectUsingMongoose();
 });
 
