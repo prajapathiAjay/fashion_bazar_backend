@@ -6,12 +6,14 @@ import { productSchema } from "../product/product.schema.js";
 import { ApplicationError } from "../../error-handler/applicationError.js";
 import buildOrderData from "../../helper/buildOrderData.js";
 import { razorpay } from "../../config/razorpay.js";
+import DiscountRepository from "../discount/discount.repository.js";
+const discountRepo = new DiscountRepository();
 // Reuse the model if the product repository already registered it
 const ProductModel = mongoose.models.Product || mongoose.model("Product", productSchema);
 
 export default class OrderRepository {
 
-    // data = { address, shipMethod, payMethod } from the checkout page
+    // data = { address, shipMethod, payMethod, couponCode? } from the checkout page
     // cod      -> creates the order right away
     // razorpay -> only creates a Razorpay order; our order is created after /verify-payment
     async placeOrder(userId, data = {}) {
@@ -47,6 +49,7 @@ export default class OrderRepository {
                     userId: String(userId),
                     addressId: String(address._id),
                     shipMethod,
+                    couponCode: orderData.discountInfo?.code ?? "",
                 },
             });
 
@@ -150,6 +153,7 @@ export default class OrderRepository {
             const orderData = await buildOrderData(ownerId, {
                 address: { _id: rzpOrder.notes.addressId },
                 shipMethod: rzpOrder.notes.shipMethod,
+                couponCode: rzpOrder.notes.couponCode || undefined,
             });
             if (Math.round(orderData.totalAmount * 100) !== rzpOrder.amount) {
                 // cart changed while paying (e.g. in another tab)
@@ -215,13 +219,14 @@ export default class OrderRepository {
     // orderData = what buildOrderData returned
     // extra     = { paymentMethod, paymentStatus, paymentInfo? }
     async createOrderAndReduceStock(userId, orderData, extra) {
-        const { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo } = orderData;
+        const { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo, discountInfo } = orderData;
         const { paymentMethod, paymentStatus, paymentInfo } = extra;
 
         // 1. Reduce stock. The {stock: {$gte}} check stops two orders buying the last piece.
         //    Your local MongoDB is not a replica set, so transactions aren't available:
         //    if one item fails, put back the stock already taken.
         const reduced = [];
+        let couponClaimed = false;
         try {
             for (const item of items) {
                 const result = await ProductModel.updateOne(
@@ -232,6 +237,14 @@ export default class OrderRepository {
                     throw new ApplicationError(`${item.name} just went out of stock`, 400);
                 }
                 reduced.push(item);
+            }
+
+            // 1b. Count the coupon use (fails if its last use was just taken by another order)
+            if (discountInfo) {
+                couponClaimed = await discountRepo.claimUse(discountInfo.code, discountInfo.amount);
+                if (!couponClaimed) {
+                    throw new ApplicationError(`Coupon ${discountInfo.code} just ran out, please remove it and try again`, 409);
+                }
             }
 
             // 2. Create the order
@@ -248,6 +261,8 @@ export default class OrderRepository {
                 paymentInfo,
                 subTotal,
                 shipping,
+                discountCode: discountInfo?.code,
+                discount: discountInfo?.amount ?? 0,
                 totalAmount,
             });
 
@@ -259,6 +274,7 @@ export default class OrderRepository {
             for (const item of reduced) {
                 await ProductModel.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
             }
+            if (couponClaimed) await discountRepo.releaseUse(discountInfo.code, discountInfo.amount);
             // 11000 = duplicate key: this Razorpay order already has an order (caller handles it)
             if (err instanceof ApplicationError || err?.code === 11000) throw err;
             console.log(err);
@@ -334,6 +350,11 @@ export default class OrderRepository {
             // put the pieces back on sale
             for (const item of updated.items) {
                 await ProductModel.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
+            }
+
+            // give the coupon use back, so the shopper (and the usage limit) get it again
+            if (updated.discountCode) {
+                await discountRepo.releaseUse(updated.discountCode, updated.discount || 0);
             }
 
             // the customer paid online -> give the money back

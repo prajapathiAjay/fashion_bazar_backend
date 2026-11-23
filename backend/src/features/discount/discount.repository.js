@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { DiscountModel } from "./discount.schema.js";
+import { OrderModel } from "../order/order.schema.js";
 import { ApplicationError } from "../../error-handler/applicationError.js";
 
 // Fields the admin may set (used / totalDiscountGiven are only changed by checkout)
@@ -92,5 +93,76 @@ export default class DiscountRepository {
         }
         console.log(err);
         return new ApplicationError("Something went wrong", 500);
+    }
+
+    // ---------- Checkout (shoppers) ----------
+
+    // How many rupees a code takes off this subtotal (whole rupees, never more than the subtotal)
+    static amountFor(discount, subTotal) {
+        let amount = discount.type === "percentage"
+            ? (subTotal * discount.value) / 100
+            : discount.value;
+        if (discount.type === "percentage" && discount.maxDiscount) amount = Math.min(amount, discount.maxDiscount);
+        return Math.max(0, Math.min(Math.round(amount), subTotal));
+    }
+
+    // Checks a code for this shopper and cart. Returns { discount, amount } or throws a message
+    // the shopper can understand. Used by "Apply" at checkout AND again when the order is placed.
+    async validateForCheckout(rawCode, userId, subTotal) {
+        const code = String(rawCode || "").trim().toUpperCase();
+        if (!code) throw new ApplicationError("Enter a coupon code", 400);
+
+        const discount = await DiscountModel.findOne({ code });
+        const now = new Date();
+        if (!discount || !discount.isActive) throw new ApplicationError("This coupon code isn't valid", 400);
+        if (discount.startsAt && discount.startsAt > now) throw new ApplicationError("This coupon isn't active yet", 400);
+        if (discount.endsAt && discount.endsAt < now) throw new ApplicationError("This coupon has expired", 400);
+        if (discount.usageLimit != null && discount.used >= discount.usageLimit) {
+            throw new ApplicationError("This coupon has been fully used", 400);
+        }
+        if (discount.minOrder && subTotal < discount.minOrder) {
+            const short = Math.ceil(discount.minOrder - subTotal);
+            throw new ApplicationError(`Add ₹${short.toLocaleString("en-IN")} more to use this coupon (minimum order ₹${discount.minOrder.toLocaleString("en-IN")})`, 400);
+        }
+        if (userId && discount.perCustomer) {
+            const usedByMe = await OrderModel.countDocuments({
+                user: userId,
+                discountCode: code,
+                status: { $ne: "Cancelled" },
+            });
+            if (usedByMe >= discount.perCustomer) {
+                throw new ApplicationError(
+                    discount.perCustomer === 1 ? "You've already used this coupon" : `You can use this coupon ${discount.perCustomer} times, and you've used it all`,
+                    400
+                );
+            }
+        }
+
+        const amount = DiscountRepository.amountFor(discount, subTotal);
+        if (amount <= 0) throw new ApplicationError("This coupon doesn't take anything off this order", 400);
+        return { discount, amount };
+    }
+
+    // Counts one use when an order is saved. The condition stops the last use being taken twice
+    // by two orders at the same moment. Returns false if the coupon ran out meanwhile.
+    async claimUse(code, amount) {
+        const updated = await DiscountModel.findOneAndUpdate(
+            {
+                code,
+                isActive: true,
+                $or: [{ usageLimit: null }, { $expr: { $lt: ["$used", "$usageLimit"] } }],
+            },
+            { $inc: { used: 1, totalDiscountGiven: amount } },
+            { new: true }
+        );
+        return Boolean(updated);
+    }
+
+    // Gives a use back (order failed after claiming, or the order was cancelled)
+    async releaseUse(code, amount) {
+        await DiscountModel.updateOne(
+            { code, used: { $gt: 0 } },
+            { $inc: { used: -1, totalDiscountGiven: -amount } }
+        );
     }
 }

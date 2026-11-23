@@ -4,19 +4,21 @@ import { cartModel } from "../features/cartItems/cartItems.schema.js";
 import { userSchema } from "../features/user/user.schema.js";
 import ShippingRepository from "../features/shipping/shipping.repository.js";
 import { calcShippingCost } from "../features/shipping/shipping.schema.js";
+import DiscountRepository from "../features/discount/discount.repository.js";
 
 // Reuse the model if the user repository already registered it
 const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
 const shippingRepo = new ShippingRepository();
+const discountRepo = new DiscountRepository();
 
 // Validates the checkout and calculates everything for an order.
 // Does NOT change the database (no stock change, no order, cart untouched).
-// data = { address, shipMethod } from the checkout page
+// data = { address, shipMethod, couponCode? } from the checkout page
 // shipMethod = the code of a delivery option from the admin's Shipping page ("standard", "same-day", ...);
 // if it's missing, the first enabled option is used
 export default async function buildOrderData(userId, data = {}) {
-    const { address, shipMethod } = data;
+    const { address, shipMethod, couponCode } = data;
 
     // The chosen delivery option (must exist and be switched on)
     const shippingMethod = await shippingRepo.getForCheckout(shipMethod);
@@ -52,8 +54,16 @@ export default async function buildOrderData(userId, data = {}) {
 
     // 3. Calculate totals on the server
     const subTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // free-shipping rules look at the cart value before the coupon
     const shipping = calcShippingCost(shippingMethod, subTotal);
-    const totalAmount = subTotal + shipping;
+
+    // coupon: checked again here (never trust the amount shown in the browser)
+    let discountInfo = null;
+    if (couponCode) {
+        const { discount, amount } = await discountRepo.validateForCheckout(couponCode, userId, subTotal);
+        discountInfo = { code: discount.code, amount };
+    }
+    const totalAmount = subTotal + shipping - (discountInfo?.amount ?? 0);
 
     // 4. Copy of the address for the order, so later edits to the user's address don't change it
     const shippingAddress = {
@@ -75,7 +85,7 @@ export default async function buildOrderData(userId, data = {}) {
         maxDays: shippingMethod.maxDays,
     };
 
-    return { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo };
+    return { items, shippingAddress, subTotal, shipping, totalAmount, shippingInfo, discountInfo };
 }
 
 

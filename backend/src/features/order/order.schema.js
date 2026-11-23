@@ -52,7 +52,10 @@ const orderSchema = new mongoose.Schema({
 
     subTotal:    { type: Number, required: true },     // sum of price * quantity
     shipping:    { type: Number, required: true },     // 0 / 99 / 199
-    totalAmount: { type: Number, required: true },     // subTotal + shipping
+    // coupon used at checkout (empty when none)
+    discountCode: { type: String },
+    discount:     { type: Number, default: 0 },        // ₹ taken off by the coupon
+    totalAmount: { type: Number, required: true },     // subTotal + shipping - discount
 
     status: {
         type: String,

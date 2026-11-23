@@ -17,6 +17,7 @@ import razorpayWebhookRouter from './src/features/order/razorpayWebhook.routes.j
 import orderAdminRouter from './src/features/order/order.admin.routes.js';
 import customerAdminRouter from './src/features/user/user.admin.routes.js';
 import discountAdminRouter from './src/features/discount/discount.admin.routes.js';
+import discountRouter from './src/features/discount/discount.routes.js';
 import { shippingRouter, shippingAdminRouter } from './src/features/shipping/shipping.routes.js';
 import reviewAdminRouter from './src/features/review/review.admin.routes.js';
 import { isAdmin } from './src/middlewares/IsAdmin.js';
@@ -92,6 +93,10 @@ server.use('/api/admin/discounts',
   jwtAuth,
   isAdmin,
   discountAdminRouter);
+// Shoppers: check a coupon at checkout
+server.use('/api/discounts',
+  jwtAuth,
+  discountRouter);
 // Admin panel: delivery rates
 server.use('/api/admin/shipping',
   jwtAuth,
