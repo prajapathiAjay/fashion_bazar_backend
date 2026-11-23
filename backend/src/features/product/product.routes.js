@@ -4,6 +4,10 @@
 import express from 'express';
 import ProductController from './product.controller.js';
 import { upload } from '../../middlewares/fileupload.middleware.js';
+import jwtAuth from '../../middlewares/jwt.middleware.js';
+import { isAdmin } from '../../middlewares/IsAdmin.js';
+
+// Reading products is public (the shop). Adding, editing and deleting need an admin login.
 
 // 2. Initialize Express router.
 const productRouter = express.Router();
@@ -35,6 +39,8 @@ productRouter.get(
 );
 productRouter.post(
   '/',
+  jwtAuth,
+  isAdmin,
   // upload.single('imageUrl'),
   (req, res)=>{
     productController.addProduct(req, res)
@@ -52,11 +58,11 @@ productRouter.get(
 } );
 
 // used by the admin panel's Edit page and Delete action
-productRouter.patch('/:id', (req, res)=>{
+productRouter.patch('/:id', jwtAuth, isAdmin, (req, res)=>{
     productController.updateProduct(req, res)
 });
 
-productRouter.delete('/:id', (req, res)=>{
+productRouter.delete('/:id', jwtAuth, isAdmin, (req, res)=>{
     productController.deleteProduct(req, res)
 });
 
