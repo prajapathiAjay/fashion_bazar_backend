@@ -46,5 +46,8 @@ export const userSchema = new mongoose.Schema({
     phone: { type: String },
     dob: { type: String },
     addresses: [addressSchema],
-    type: { type: String, enum: ["user","admin"] , default:"user"}
+    type: { type: String, enum: ["user","admin"] , default:"user"},
+    // forgot password: hash of the emailed token, and when that link stops working
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date }
 }, { timestamps: true })

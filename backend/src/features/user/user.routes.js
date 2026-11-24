@@ -21,6 +21,13 @@ userRouter.post('/signin', (req, res)=>{
 userRouter.post("/admin/signin",(req,res,next)=>{
     userController.adminSignIn(req,res,next)
 })
+// Forgot password: no jwtAuth, because the user can't log in yet
+userRouter.post('/forgot-password', (req, res)=>{
+    userController.forgotPassword(req, res)
+});
+userRouter.post('/reset-password', (req, res)=>{
+    userController.resetPasswordWithToken(req, res)
+});
 userRouter.put('/resetPassword', jwtAuth, (req, res, next)=>{
     userController.resetPassword(req, res, next)
 });

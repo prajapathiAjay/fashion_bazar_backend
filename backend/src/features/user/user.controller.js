@@ -3,11 +3,97 @@ import UserRepository from './user.repository.js';
 import bcrypt from 'bcrypt';
 import { getJwtSecret } from '../../config/jwtSecret.js';
 import { ApplicationError } from '../../error-handler/applicationError.js';
+import crypto from 'crypto';
+import { sendEmail } from '../../config/nodemailer.js';
+import { resetPasswordEmail } from '../../helper/resetPasswordEmail.js';
+
+// how long a reset link works
+const RESET_LINK_MINUTES = 15;
+
+// the token in the link is never stored; only this hash of it is
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 export default class UserController {
 
   constructor() {
     this.userRepository = new UserRepository();
+  }
+
+  // POST /api/users/forgot-password   body: { email }
+  // Emails a reset link. Replies the same way whether the account exists or not,
+  // so nobody can use this form to find out which emails are registered.
+  async forgotPassword(req, res) {
+    const sameReply = {
+      success: true,
+      message: "If an account exists for this email, we've sent a reset link.",
+    };
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Enter the email you signed up with.' });
+      }
+
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) {
+        return res.status(200).json(sameReply);
+      }
+
+      // 1. random token for the link; the database only keeps its hash
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + RESET_LINK_MINUTES * 60 * 1000);
+      await this.userRepository.saveResetToken(user._id, hashToken(token), expires);
+
+      // 2. email the link (with the plain token)
+      const link = `${process.env.CLIENT_URL}/reset-password/${token}`;
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Reset your Fashion Bazar password',
+          html: resetPasswordEmail(user.firstName, link),
+        });
+      } catch (mailErr) {
+        console.log(mailErr);
+        // the email never arrived, so don't leave a working token behind
+        await this.userRepository.clearResetToken(user._id);
+        return res.status(500).json({ success: false, message: 'Could not send the email. Please try again.' });
+      }
+
+      return res.status(200).json(sameReply);
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ success: false, message: 'Something went wrong' });
+    }
+  }
+
+  // POST /api/users/reset-password   body: { token, password }
+  // Opened from the email link. Sets the new password if the token is valid and not expired.
+  async resetPasswordWithToken(req, res) {
+    try {
+      const token = typeof req.body?.token === 'string' ? req.body.token : '';
+      const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
+      // same rules as the website's form (never trust only the browser)
+      if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters and include a letter and a number.',
+        });
+      }
+      if (!token) {
+        return res.status(400).json({ success: false, message: 'This link is invalid or has expired.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const user = await this.userRepository.resetPasswordWithToken(hashToken(token), hashedPassword);
+      if (!user) {
+        return res.status(400).json({ success: false, message: 'This link is invalid or has expired.' });
+      }
+
+      return res.status(200).json({ success: true, message: 'Password updated. You can now log in.' });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ success: false, message: 'Something went wrong' });
+    }
   }
 
   async resetPassword(req, res, next) {
