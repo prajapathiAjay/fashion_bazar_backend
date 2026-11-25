@@ -12,7 +12,7 @@ export default class UserRepository {
             let user = await UserModel.findById(userID);
             if (user) {
                 user.password = hashedPassword;
-                user.save();
+                await user.save();
             } else {
                 throw new Error("No such user found");
             }
@@ -47,6 +47,16 @@ export default class UserRepository {
             return await UserModel.findOne({ email, password });
         }
         catch (err) {
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
+    // Full user including the password hash: only for checking a password on the server
+    async findByIdWithPassword(userID) {
+        try {
+            return await UserModel.findById(userID);
+        } catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
         }

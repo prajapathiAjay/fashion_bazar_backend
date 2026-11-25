@@ -96,12 +96,40 @@ export default class UserController {
     }
   }
 
+  // PUT /api/users/resetPassword   body: { currentPassword, newPassword }
+  // Change password while logged in. The current password must be correct,
+  // so someone holding an unlocked device/token can't take over the account.
   async resetPassword(req, res, next) {
-    const { newPassword } = req.body;
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-    const userID = req.userID;
     try {
-      await this.userRepository.resetPassword(userID, hashedPassword)
+      const currentPassword = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
+      const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: 'Enter your current password.' });
+      }
+      // same rules as the website's form (never trust only the browser)
+      if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters and include a letter and a number.',
+        });
+      }
+
+      const user = await this.userRepository.findByIdWithPassword(req.userID);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      // 400, not 401: the website logs the user out on any 401
+      const matches = await bcrypt.compare(currentPassword, user.password);
+      if (!matches) {
+        return res.status(400).json({ success: false, message: 'Your current password is incorrect.' });
+      }
+      if (await bcrypt.compare(newPassword, user.password)) {
+        return res.status(400).json({ success: false, message: 'New password must be different from the current one.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await this.userRepository.resetPassword(req.userID, hashedPassword);
       res.status(200).json({ success: true, message: 'Password is updated' });
     } catch (err) {
       console.log(err);
