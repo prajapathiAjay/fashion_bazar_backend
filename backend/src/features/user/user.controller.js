@@ -252,10 +252,16 @@ export default class UserController {
 
 
   async updateUser(req, res, next) {
-    const data = req.body
-     const userID = req.userID;
+    // Only copy the fields a user may edit on their own profile.
+    // Never pass req.body straight through: someone could send { type: "admin" }
+    // and make themselves an admin, or overwrite password / reset-token fields.
+    const EDITABLE = ['firstName', 'lastName', 'email', 'phone', 'dob', 'addresses'];
+    const data = {};
+    for (const key of EDITABLE) {
+      if (req.body?.[key] !== undefined) data[key] = req.body[key];
+    }
+    const userID = req.userID;
 
- console.log("userId",userID)
     try {
       const updatedUser = await this.userRepository.updateUser(userID,data)
       res.status(200).json({ success: true, message: "user updated Succesfully" })

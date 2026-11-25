@@ -27,6 +27,9 @@ import wishListRouter from './src/features/wishlist/wishlist.routes.js';
 import uploadRouter from './src/features/upload/upload.routes.js';
 import reviewRouter from './src/features/review/review.routes.js';
 import contactRouter from './src/features/contact/contact.routes.js';
+import contactAdminRouter from './src/features/contact/contact.admin.routes.js';
+import { faqRouter, faqAdminRouter } from './src/features/faq/faq.routes.js';
+import { settingsRouter, settingsAdminRouter } from './src/features/settings/settings.routes.js';
 // 2. Create Server
 const server = express();
 
@@ -105,6 +108,25 @@ server.use('/api/admin/reviews',
   jwtAuth,
   isAdmin,
   reviewAdminRouter);
+// Admin panel: Contact page messages (read / resolve / delete)
+server.use('/api/admin/messages',
+  jwtAuth,
+  isAdmin,
+  contactAdminRouter);
+// Admin panel: Help centre questions (add / edit / publish / delete)
+server.use('/api/admin/faqs',
+  jwtAuth,
+  isAdmin,
+  faqAdminRouter);
+// Admin panel: store name and contact details
+server.use('/api/admin/settings',
+  jwtAuth,
+  isAdmin,
+  settingsAdminRouter);
+// Public: store name and contact details for the website's footer / Contact page
+server.use('/api/settings', settingsRouter);
+// Public: published FAQs for the website's Help centre
+server.use('/api/faq', faqRouter);
 // Public: current delivery rates for cart / checkout
 server.use('/api/shipping', shippingRouter);
 
