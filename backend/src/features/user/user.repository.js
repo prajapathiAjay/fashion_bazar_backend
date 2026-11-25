@@ -5,6 +5,10 @@ import { ApplicationError } from "../../error-handler/applicationError.js";
 // creating model from schema.
 const UserModel = mongoose.model('User', userSchema)
 
+// A token's issue time (iat) is in whole seconds, so a token made right after the change
+// could look "older" than it. Recording the change 1 second early keeps that new token valid.
+const passwordChangedNow = () => new Date(Date.now() - 1000);
+
 export default class UserRepository {
 
     async resetPassword(userID, hashedPassword) {
@@ -12,6 +16,7 @@ export default class UserRepository {
             let user = await UserModel.findById(userID);
             if (user) {
                 user.password = hashedPassword;
+                user.passwordChangedAt = passwordChangedNow();
                 await user.save();
             } else {
                 throw new Error("No such user found");
@@ -143,10 +148,21 @@ export default class UserRepository {
             return await UserModel.findOneAndUpdate(
                 { resetPasswordToken: hashedToken, resetPasswordExpires: { $gt: new Date() } },
                 {
-                    $set: { password: hashedPassword },
+                    $set: { password: hashedPassword, passwordChangedAt: passwordChangedNow() },
                     $unset: { resetPasswordToken: "", resetPasswordExpires: "" },
                 }
             );
+        } catch (err) {
+            console.log(err);
+            throw new ApplicationError("Something went wrong with database", 500);
+        }
+    }
+
+    // For jwtAuth: does this user still exist, and when did their password last change?
+    // -> { passwordChangedAt } or null
+    async getAuthInfo(userID) {
+        try {
+            return await UserModel.findById(userID).select("passwordChangedAt").lean();
         } catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
@@ -157,7 +173,7 @@ export default class UserRepository {
         try {
             // never send the password hash or the reset token to the browser
             const user = await UserModel.findById(userID)
-                .select("-password -resetPasswordToken -resetPasswordExpires")
+                .select("-password -resetPasswordToken -resetPasswordExpires -passwordChangedAt")
             return user;
         } catch (err) {
 

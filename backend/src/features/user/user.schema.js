@@ -49,5 +49,8 @@ export const userSchema = new mongoose.Schema({
     type: { type: String, enum: ["user","admin"] , default:"user"},
     // forgot password: hash of the emailed token, and when that link stops working
     resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date }
+    resetPasswordExpires: { type: Date },
+    // when the password last changed: login tokens issued before this stop working
+    // (so changing the password logs out every other device)
+    passwordChangedAt: { type: Date }
 }, { timestamps: true })

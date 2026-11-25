@@ -130,7 +130,15 @@ export default class UserController {
 
       const hashedPassword = await bcrypt.hash(newPassword, 12);
       await this.userRepository.resetPassword(req.userID, hashedPassword);
-      res.status(200).json({ success: true, message: 'Password is updated' });
+
+      // Changing the password ends every older login (see jwtAuth), including this one,
+      // so hand back a fresh token: the person who just changed it stays signed in here.
+      const token = jwt.sign(
+        { userID: user._id, email: user.email },
+        getJwtSecret(),
+        { expiresIn: user.type === 'admin' ? '1d' : '7d' } // same as their sign-in
+      );
+      res.status(200).json({ success: true, message: 'Password is updated', data: { token } });
     } catch (err) {
       console.log(err);
       console.log("Passing error to middleware");
@@ -157,7 +165,8 @@ export default class UserController {
       
       };
       await this.userRepository.signUp(user);
-      res.status(201).json({ success: true, message: 'Sign up successful', data: { user } });
+      // never send the password hash back to the browser
+      res.status(201).json({ success: true, message: 'Sign up successful', data: { user: { firstName, lastName, email } } });
     } catch (err) {
       next(err);
     }
