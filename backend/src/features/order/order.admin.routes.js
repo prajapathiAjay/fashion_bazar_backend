@@ -27,4 +27,9 @@ orderAdminRouter.patch("/:id/return", (req, res, next) => {
     orderController.updateReturn(req, res, next);
 });
 
+// refund still owed on a cancelled online order: body = { mode: "retry" | "manual" }
+orderAdminRouter.patch("/:id/refund", (req, res, next) => {
+    orderController.settleCancelRefund(req, res, next);
+});
+
 export default orderAdminRouter;

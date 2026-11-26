@@ -60,6 +60,7 @@ class ProductRepository{
                 const startsWith = new RegExp("^" + escapeRegex(q), "i");
                 const searchCategories = await CategoryModel.find({
                     slug: { $ne: "all" },
+                    isActive: { $ne: false },
                     $or: [{ categoryName: startsWith }, { slug: startsWith }],
                 }).select("_id");
                 if(searchCategories.length){
@@ -73,7 +74,7 @@ class ProductRepository{
                 .filter((id) => mongoose.isValidObjectId(id))
                 .map((id) => new mongoose.Types.ObjectId(id));
             if(slugs.length){
-                const found = await CategoryModel.find({ slug: { $in: slugs } }).select("_id");
+                const found = await CategoryModel.find({ slug: { $in: slugs }, isActive: { $ne: false } }).select("_id");
                 if(!found.length) return empty;
                 categoryIds.push(...found.map((c) => c._id));
             }

@@ -235,7 +235,7 @@ export default class UserRepository {
             throw new ApplicationError("Customer not found", 404);
         }
         const customer = await UserModel.findOne({ _id: customerId, type: { $ne: "admin" } })
-            .select("-password")
+            .select("-password -resetPasswordToken -resetPasswordExpires -passwordChangedAt")
             .lean();
         if (!customer) throw new ApplicationError("Customer not found", 404);
 

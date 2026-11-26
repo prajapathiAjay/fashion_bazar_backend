@@ -107,6 +107,20 @@ export default class OrderController {
         }
     }
 
+    // PATCH /api/admin/orders/:id/refund   body: { mode: "retry" | "manual" }
+    async settleCancelRefund(req, res) {
+        try {
+            const order = await this.orderRepository.settleCancelRefund(req.params.id, req.body?.mode);
+            return res.status(200).json({
+                success: true,
+                message: req.body?.mode === "retry" ? "Refund sent through Razorpay." : "Refund recorded.",
+                data: order,
+            });
+        } catch (error) {
+            return this.sendError(res, error, "Could not update the refund");
+        }
+    }
+
     async getMyOrders(req, res, next) {
         try {
             const orders = await this.orderRepository.getMyOrders(req.userID);

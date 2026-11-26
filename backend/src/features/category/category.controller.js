@@ -15,15 +15,12 @@ export default class CategoryController {
 
         try {
             const createdCategory = await this.categoryRepository.createCategory(categoryData)
-            return res.status(201).json({ success: true, message: "category created Successfully",createdCategory })
+            return res.status(201).json({ success: true, message: "category created Successfully",data: createdCategory, createdCategory })
 
 
 
         } catch (error) {
-            return res.status(500).json({
-                success: false,
-                message: error.message,
-            });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
 
 
@@ -32,13 +29,11 @@ export default class CategoryController {
     async getAllCategory(req,res,next){
       
         try {
-            const categories=await this.categoryRepository.getAllCategory()
+            // the admin panel asks for hidden (inactive) categories too
+            const categories=await this.categoryRepository.getAllCategory(req.query.includeInactive === "true")
             return res.status(200).json({success:true,message:"category fetched Successsully",data:categories})
         } catch (error) {
-             return res.status(500).json({
-                success: false,
-                message: error.message,
-            });
+             return res.status(error.code || 500).json({ success: false, message: error.message });
         }
 
 
@@ -59,10 +54,7 @@ export default class CategoryController {
             }
             return res.status(200).json({ success: true, message: "category fetched Successfully", data: category })
         } catch (error) {
-            return res.status(500).json({
-                success: false,
-                message: error.message,
-            });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
     }
 
@@ -82,10 +74,7 @@ export default class CategoryController {
             return res.status(200).json({success:true,message:"category updated successfully",data:updatedCategory})
 
         }catch(error){
-            return res.status(500).json({
-                success: false,
-                message: error.message,
-            });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
 
 
@@ -106,10 +95,7 @@ export default class CategoryController {
             }
             return res.status(200).json({ success: true, message: "category deleted successfully", data: deletedCategory })
         } catch (error) {
-            return res.status(500).json({
-                success: false,
-                message: error.message,
-            });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
     }
 

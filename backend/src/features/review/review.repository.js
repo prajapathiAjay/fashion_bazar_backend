@@ -67,7 +67,8 @@ class reviewRepository {
                 {
                     user: { $in: userIds.map((id) => new mongoose.Types.ObjectId(id)) },
                     "items.product": { $in: productIds.map((id) => new mongoose.Types.ObjectId(id)) },
-                    status: { $ne: "Cancelled" },
+                    // a cancelled or returned order doesn't count as having bought it
+                    status: { $nin: ["Cancelled", "Returned"] },
                 },
                 { projection: { user: 1, "items.product": 1 } }
             )

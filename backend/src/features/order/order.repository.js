@@ -495,6 +495,10 @@ export default class OrderRepository {
             for (const item of updated.items) {
                 await ProductModel.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
             }
+            // the coupon use comes back too (same as a cancel), so "once per customer" codes work again
+            if (updated.discountCode) {
+                await discountRepo.releaseUse(updated.discountCode, updated.discount || 0);
+            }
             // paid online -> money goes straight back through Razorpay
             if (updated.paymentMethod === "razorpay" && updated.paymentStatus === "Paid") {
                 const paymentId = updated.paymentInfo?.razorpayPaymentId;
@@ -512,6 +516,33 @@ export default class OrderRepository {
             }
         }
         return { order: updated, refundFailed };
+    }
+
+    // ---------- Admin: refund owed on a cancelled online order ----------
+    // When Razorpay refused the refund at cancel time, the order is Cancelled but still "Paid".
+    //   mode "retry"  -> ask Razorpay again
+    //   mode "manual" -> the admin refunded it from the Razorpay dashboard; just record it
+    async settleCancelRefund(orderId, mode) {
+        const order = await this.getOrderById(orderId);
+        if (order.status !== "Cancelled" || order.paymentStatus !== "Paid") {
+            throw new ApplicationError("No refund is owed on this order", 400);
+        }
+        if (mode === "retry") {
+            const paymentId = order.paymentInfo?.razorpayPaymentId;
+            const refunded = paymentId ? await this.refundPayment(paymentId, `Order ${order.orderNumber} cancelled`) : false;
+            if (!refunded) {
+                throw new ApplicationError("Razorpay refused the refund again. Refund it from the Razorpay dashboard, then click \"Mark refunded\".", 502);
+            }
+        } else if (mode !== "manual") {
+            throw new ApplicationError("Unknown refund action", 400);
+        }
+        const updated = await OrderModel.findOneAndUpdate(
+            { _id: order._id, status: "Cancelled", paymentStatus: "Paid" },
+            { $set: { paymentStatus: "Refunded" } },
+            { new: true }
+        ).populate("user", "firstName lastName email phone");
+        if (!updated) throw new ApplicationError("This order was just changed by someone else, please refresh", 409);
+        return updated;
     }
 
     static RETURN_DAYS = 30;

@@ -107,7 +107,8 @@ export const productSchema = new mongoose.Schema(
     ],
 
     // Fashion-specific information
-    sizes: [String],
+    // same list the bag accepts (cart schema), so every size can actually be bought
+    sizes: [{ type: String, enum: { values: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'], message: 'Size {VALUE} is not allowed. Use XXS, XS, S, M, L, XL, XXL or 3XL.' } }],
 
     colors: [String],
   },

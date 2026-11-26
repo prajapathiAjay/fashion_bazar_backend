@@ -170,21 +170,32 @@ server.get('/', (req, res) => {
 });
 
 // Error handler middleware
+// Always answers { success: false, message } (JSON), so the website and admin panel can read the message
 server.use((err, req, res, next) => {
   console.log(err);
   if(err instanceof mongoose.Error.ValidationError){
-    return res.status(400).send(err.message);
+    const first = Object.values(err.errors)[0]?.message;
+    return res.status(400).json({ success: false, message: first || 'Please check the details and try again' });
   }
   if (err instanceof ApplicationError) {
-    return res.status(err.code).send(err.message);
+    return res.status(err.code).json({ success: false, message: err.message });
+  }
+  // image uploads (multer): too many files / too big
+  if (err?.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Each image must be 10 MB or smaller'
+      : err.code === 'LIMIT_UNEXPECTED_FILE' || err.code === 'LIMIT_FILE_COUNT'
+        ? 'Too many images in one upload (5 at most)'
+        : 'Could not upload the images';
+    return res.status(400).json({ success: false, message });
+  }
+  // body that isn't valid JSON
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ success: false, message: 'Invalid request' });
   }
 
   // server errors.
-  res
-    .status(500)
-    .send(
-      'Something went wrong, please try later'
-    );
+  res.status(500).json({ success: false, message: 'Something went wrong, please try later' });
 });
 
 // 4. Middleware to handle 404 requests.

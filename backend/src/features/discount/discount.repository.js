@@ -13,7 +13,9 @@ const EDITABLE = [
 const toDate = (value, endOfDay = false) => {
     if (value === null || value === undefined || value === "") return null;
     if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`);
+        // the shop runs on Indian time: the coupon starts at midnight IST and ends at 23:59 IST that day,
+        // whatever time zone the server is in (hosts usually run on UTC)
+        return new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}+05:30`);
     }
     const d = new Date(value);
     if (isNaN(d)) throw new ApplicationError("Invalid date", 400);
@@ -69,6 +71,11 @@ export default class DiscountRepository {
 
     async update(id, body) {
         const discount = await this.getById(id);
+        // orders remember the code as text, so a used code must never change
+        // (its usage counts and "once per customer" checks would stop matching)
+        if (body.code !== undefined && String(body.code).trim().toUpperCase() !== discount.code && discount.used > 0) {
+            throw new ApplicationError("This coupon has already been used, so its code can't be changed. Create a new coupon instead.", 400);
+        }
         try {
             discount.set(this.clean(body, discount));
             return await discount.save();
@@ -79,6 +86,10 @@ export default class DiscountRepository {
 
     async remove(id) {
         const discount = await this.getById(id);
+        // a used coupon stays (its orders refer to it); switching it off stops new uses
+        if (discount.used > 0) {
+            throw new ApplicationError("This coupon has already been used, so it can't be deleted. Turn it off (Inactive) instead.", 400);
+        }
         await discount.deleteOne();
         return discount;
     }
@@ -128,7 +139,8 @@ export default class DiscountRepository {
             const usedByMe = await OrderModel.countDocuments({
                 user: userId,
                 discountCode: code,
-                status: { $ne: "Cancelled" },
+                // cancelled and returned orders give the use back
+                status: { $nin: ["Cancelled", "Returned"] },
             });
             if (usedByMe >= discount.perCustomer) {
                 throw new ApplicationError(

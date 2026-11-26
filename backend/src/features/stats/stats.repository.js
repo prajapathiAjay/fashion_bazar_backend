@@ -24,6 +24,30 @@ const istLabel = (time, options) =>
     new Date(time).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", ...options });
 
 const round1 = (n) => Math.round(n * 10) / 10;
+
+// Indian states / UTs with their usual short codes, so "MH", "maharashtra " and "Maharashtra" are one region
+const INDIAN_STATES = {
+    AN: "Andaman and Nicobar Islands", AP: "Andhra Pradesh", AR: "Arunachal Pradesh", AS: "Assam", BR: "Bihar",
+    CH: "Chandigarh", CG: "Chhattisgarh", DN: "Dadra and Nagar Haveli and Daman and Diu", DL: "Delhi", GA: "Goa",
+    GJ: "Gujarat", HR: "Haryana", HP: "Himachal Pradesh", JK: "Jammu and Kashmir", JH: "Jharkhand", KA: "Karnataka",
+    KL: "Kerala", LA: "Ladakh", LD: "Lakshadweep", MP: "Madhya Pradesh", MH: "Maharashtra", MN: "Manipur",
+    ML: "Meghalaya", MZ: "Mizoram", NL: "Nagaland", OD: "Odisha", PY: "Puducherry", PB: "Punjab", RJ: "Rajasthan",
+    SK: "Sikkim", TN: "Tamil Nadu", TS: "Telangana", TR: "Tripura", UP: "Uttar Pradesh", UK: "Uttarakhand",
+    WB: "West Bengal",
+};
+const STATE_ALIASES = {
+    OR: "Odisha", ORISSA: "Odisha", TG: "Telangana", UA: "Uttarakhand", UTTARANCHAL: "Uttarakhand", CT: "Chhattisgarh",
+    "NEW DELHI": "Delhi", "NCT OF DELHI": "Delhi", PONDICHERRY: "Puducherry", "J&K": "Jammu and Kashmir",
+    "JAMMU & KASHMIR": "Jammu and Kashmir", "ANDAMAN & NICOBAR ISLANDS": "Andaman and Nicobar Islands",
+};
+const STATE_BY_NAME = Object.fromEntries(Object.values(INDIAN_STATES).map((name) => [name.toUpperCase(), name]));
+const normalizeState = (raw) => {
+    const key = String(raw ?? "").trim().replace(/\s+/g, " ").replace(/\.$/, "").toUpperCase();
+    if (!key) return "Not given";
+    return INDIAN_STATES[key] || STATE_ALIASES[key] || STATE_BY_NAME[key]
+        // unknown text: tidy it into Title Case so at least the spelling variants by case merge
+        || key.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+};
 // % change from the previous period; null when there is nothing to compare with
 const change = (current, previous) => (previous ? round1(((current - previous) / previous) * 100) : null);
 const isCounted = (order) => order.status !== "Cancelled" && order.status !== "Returned"; // cancelled and returned orders don't count as sales
@@ -45,7 +69,7 @@ function buildPeriods(range, now = new Date()) {
         const edges = Array.from({ length: 13 }, (_, i) => monthStart(i - 11));
         const prevEdges = Array.from({ length: 13 }, (_, i) => monthStart(i - 23));
         const labels = edges.slice(0, 12).map((e) => istLabel(e, { month: "short" }));
-        return { edges, prevEdges, labels };
+        return { edges, prevEdges, labels, prevCutoff: prevCutoffOf(edges, prevEdges, now) };
     }
 
     const days = range === "7d" ? 7 : 30;
@@ -56,7 +80,13 @@ function buildPeriods(range, now = new Date()) {
     const labels = edges
         .slice(0, days)
         .map((e) => istLabel(e, range === "7d" ? { weekday: "short" } : { day: "numeric", month: "short" }));
-    return { edges, prevEdges, labels };
+    return { edges, prevEdges, labels, prevCutoff: prevCutoffOf(edges, prevEdges, now) };
+}
+
+// This period is still running (today isn't over), so the previous period is compared only up to the
+// same point: 9 AM on day 7 of this week vs 9 AM on day 7 of last week. Otherwise every % looks worse.
+function prevCutoffOf(edges, prevEdges, now) {
+    return prevEdges[0] + (now.getTime() - edges[0]);
 }
 
 // which slot a time falls in (-1 if outside)
@@ -79,22 +109,28 @@ function splitBySlot(items, periods, getTime = (x) => x.createdAt) {
         if (c >= 0) current[c].push(item);
         else {
             const p = slotOf(t, periods.prevEdges);
-            if (p >= 0) previous[p].push(item);
+            if (p >= 0 && new Date(t).getTime() < periods.prevCutoff) previous[p].push(item);
         }
     }
     return { current, previous };
 }
 
 // one KPI card: total for the period, % change and a sparkline (one value per slot)
+// hasPrevious: the previous period had any data at all (so "no data" is only shown when that's true)
+// Percent KPIs change in points (2% -> 4% is +2 pts, not +100%).
 function kpi(key, label, format, currentSlots, previousSlots, measure, extra = {}) {
     const value = measure(currentSlots.flat());
-    const prevValue = measure(previousSlots.flat());
+    const prevList = previousSlots.flat();
+    const prevValue = measure(prevList);
+    const isPercent = format === "percent";
     return {
         key,
         label,
         format,
         value,
-        change: change(value, prevValue),
+        hasPrevious: prevList.length > 0,
+        changeUnit: isPercent ? "pts" : "%",
+        change: !prevList.length ? null : isPercent ? round1(value - prevValue) : change(value, prevValue),
         spark: currentSlots.map((slot) => measure(slot)),
         ...extra,
     };
@@ -193,7 +229,10 @@ export default class StatsRepository {
         const currentOrders = current.flat();
 
         const kpis = [
-            kpi("revenue", "Total Revenue", "currency", current, previous, revenueOf),
+            // all orders that weren't cancelled or returned, paid or not yet (cash on delivery pays at the door)
+            kpi("revenue", "Gross Sales", "currency", current, previous, revenueOf, {
+                hint: "All orders placed in this period, except cancelled and returned ones. Includes cash-on-delivery orders not paid yet.",
+            }),
             kpi("orders", "Orders", "number", current, previous, countOf),
             kpi("customers", "New Customers", "number", users.current, users.previous, (list) => list.length),
             kpi("aov", "Avg. Order Value", "currency", current, previous, aovOf),
@@ -312,7 +351,8 @@ export default class StatsRepository {
                 return round1((repeat.size / buyers.size) * 100);
             }),
             kpi("cancelled", "Cancellation Rate", "percent", current, previous, (list) =>
-                list.length ? round1((list.filter((o) => !isCounted(o)).length / list.length) * 100) : 0,
+                // only cancellations (returns are not cancellations)
+                list.length ? round1((list.filter((o) => o.status === "Cancelled").length / list.length) * 100) : 0,
                 { invert: true }
             ),
             kpi("items", "Items per Order", "decimal", current, previous, (list) => {
@@ -335,7 +375,7 @@ export default class StatsRepository {
         // revenue by delivery state
         const states = new Map();
         for (const o of currentOrders.filter(isCounted)) {
-            const state = o.shippingAddress?.state?.trim() || "Not given";
+            const state = normalizeState(o.shippingAddress?.state);
             const row = states.get(state) || { state, orders: 0, revenue: 0 };
             row.orders++;
             row.revenue += o.totalAmount || 0;

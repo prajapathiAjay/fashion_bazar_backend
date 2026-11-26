@@ -12,7 +12,7 @@ import mongoose from "mongoose"
     },
     description:{
         type:String,
-        required:true
+        default:""
     },
     image:{
         type:String,
