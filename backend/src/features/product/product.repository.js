@@ -55,6 +55,16 @@ class ProductRepository{
             if(q){
                 const rx = new RegExp(escapeRegex(q), "i");
                 match.$or = [{ name: rx }, { brand: rx }, { description: rx }];
+                // also find products by category name ("women" -> Womens). Matched from the start
+                // of the name, so "men" finds Mens but not Womens. "all" is the whole shop, so skipped.
+                const startsWith = new RegExp("^" + escapeRegex(q), "i");
+                const searchCategories = await CategoryModel.find({
+                    slug: { $ne: "all" },
+                    $or: [{ categoryName: startsWith }, { slug: startsWith }],
+                }).select("_id");
+                if(searchCategories.length){
+                    match.$or.push({ categories: { $in: searchCategories.map((c) => c._id) } });
+                }
             }
 
             // Products store category ids, so slugs are looked up first. "all" means no category filter.
