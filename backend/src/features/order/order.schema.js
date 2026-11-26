@@ -59,8 +59,31 @@ const orderSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ["Ordered", "Packed", "Shipped", "Delivered", "Cancelled"],
+        // Returned = delivered, then sent back and received by the shop (final)
+        enum: ["Ordered", "Packed", "Shipped", "Delivered", "Cancelled", "Returned"],
         default: "Ordered",
+    },
+    // when it was marked Delivered (the 30-day return window starts here)
+    deliveredAt: { type: Date },
+
+    // who cancelled and why (customers can cancel until the order ships)
+    cancelledBy:  { type: String, enum: ["customer", "admin"] },
+    cancelReason: { type: String, maxlength: 500 },
+
+    // Return of a delivered order:
+    // Requested -> Approved (pickup arranged) -> Received (back in stock) -> Refunded
+    //          \-> Rejected
+    // Online payments are refunded through Razorpay when the return is Received;
+    // cash-on-delivery refunds are sent by the shop to refundTo, then marked Refunded.
+    returnRequest: {
+        status:      { type: String, enum: ["Requested", "Approved", "Rejected", "Received", "Refunded"] },
+        reason:      { type: String, maxlength: 500 },
+        refundTo:    { type: String, maxlength: 200 },   // UPI ID / bank details (COD orders)
+        adminNote:   { type: String, maxlength: 500 },   // shown to the customer (e.g. why it was rejected)
+        requestedAt: { type: Date },
+        resolvedAt:  { type: Date },                     // approved / rejected
+        receivedAt:  { type: Date },
+        refundedAt:  { type: Date },
     },
 }, { timestamps: true });                              // createdAt = order date, updatedAt = last status change
 

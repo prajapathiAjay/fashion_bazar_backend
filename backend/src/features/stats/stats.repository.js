@@ -16,7 +16,7 @@ export const RANGES = ["7d", "30d", "12m"];
 const DAY = 24 * 60 * 60 * 1000;
 const IST_OFFSET = 330 * 60 * 1000; // UTC+5:30
 const LOW_STOCK_AT = 10; // products with this many or fewer left show in "Low stock"
-const ORDER_STATUSES = ["Ordered", "Packed", "Shipped", "Delivered", "Cancelled"];
+const ORDER_STATUSES = ["Ordered", "Packed", "Shipped", "Delivered", "Cancelled", "Returned"];
 
 // a Date shifted to IST, read it with getUTC*() to get Indian date/time parts
 const ist = (date) => new Date(new Date(date).getTime() + IST_OFFSET);
@@ -26,7 +26,7 @@ const istLabel = (time, options) =>
 const round1 = (n) => Math.round(n * 10) / 10;
 // % change from the previous period; null when there is nothing to compare with
 const change = (current, previous) => (previous ? round1(((current - previous) / previous) * 100) : null);
-const isCounted = (order) => order.status !== "Cancelled"; // cancelled orders don't count as sales
+const isCounted = (order) => order.status !== "Cancelled" && order.status !== "Returned"; // cancelled and returned orders don't count as sales
 
 /**
  * The time slots for a range: the current period and the same length just before it.
@@ -288,7 +288,7 @@ export default class StatsRepository {
                 .lean(),
             // each customer's first (non-cancelled) order ever
             OrderModel.aggregate([
-                { $match: { status: { $ne: "Cancelled" } } },
+                { $match: { status: { $nin: ["Cancelled", "Returned"] } } },
                 { $group: { _id: "$user", first: { $min: "$createdAt" } } },
             ]),
             this.productLookup(),

@@ -10,6 +10,15 @@ import DiscountRepository from "../features/discount/discount.repository.js";
 const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 
 const shippingRepo = new ShippingRepository();
+
+// The price the shopper pays for one unit (same rule as the website's getPrices):
+// sellingPrice when saved, otherwise price minus discount %. Never the MRP when there's a sale.
+export const unitPrice = (product) => {
+    if (!product) return 0;
+    if (product.sellingPrice != null) return Math.round(Number(product.sellingPrice));
+    const percent = Number(product.discount) || 0;
+    return Math.round((Number(product.price) || 0) * (100 - percent) / 100);
+};
 const discountRepo = new DiscountRepository();
 
 // Validates the checkout and calculates everything for an order.
@@ -31,6 +40,12 @@ export default async function buildOrderData(userId, data = {}) {
     const savedAddress = user.addresses.id(address?._id);
     if (!savedAddress) throw new ApplicationError("Please select a valid address", 400);
 
+    // the courier needs a number to call (Cash on delivery especially)
+    const phone = String(user.phone ?? "").replace(/\D/g, "").slice(-10);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+        throw new ApplicationError("Please add a valid 10-digit mobile number in your profile before ordering", 400);
+    }
+
     // 2. Get the cart with product details
     const cartItems = await cartModel.find({ userID: userId }).populate("productID");
     if (cartItems.length === 0) throw new ApplicationError("Your cart is empty", 400);
@@ -38,7 +53,9 @@ export default async function buildOrderData(userId, data = {}) {
     const items = [];
     for (const cartItem of cartItems) {
         const product = cartItem.productID;
-        if (!product) throw new ApplicationError("A product in your cart no longer exists", 400);
+        if (!product || product.isActive === false) {
+            throw new ApplicationError(`${product?.name ?? "A product in your bag"} is no longer available. Please remove it from your bag.`, 400);
+        }
         if (product.stock < cartItem.quantity) {
             throw new ApplicationError(`Only ${product.stock} left of ${product.name}`, 400);
         }
@@ -46,7 +63,7 @@ export default async function buildOrderData(userId, data = {}) {
             product: product._id,
             name: product.name,
             image: product.images?.[0],
-            price: product.price,
+            price: unitPrice(product),
             size: cartItem.size,
             quantity: cartItem.quantity,
         });
@@ -68,7 +85,7 @@ export default async function buildOrderData(userId, data = {}) {
     // 4. Copy of the address for the order, so later edits to the user's address don't change it
     const shippingAddress = {
         name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
-        phone: user.phone,
+        phone,
         tag: savedAddress.tag,
         line1: savedAddress.line1,
         line2: savedAddress.line2,

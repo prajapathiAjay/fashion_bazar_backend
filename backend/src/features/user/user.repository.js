@@ -9,6 +9,13 @@ const UserModel = mongoose.model('User', userSchema)
 // could look "older" than it. Recording the change 1 second early keeps that new token valid.
 const passwordChangedNow = () => new Date(Date.now() - 1000);
 
+// Exact email, ignoring upper/lower case and spaces around it
+// (older accounts may have been saved with capitals, so a plain lowercase lookup would miss them)
+const emailMatch = (email) => {
+    const clean = String(email ?? "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`^${clean}$`, "i");
+};
+
 export default class UserRepository {
 
     async resetPassword(userID, hashedPassword) {
@@ -38,11 +45,12 @@ export default class UserRepository {
         catch (err) {
             console.log(err);
             if (err instanceof mongoose.Error.ValidationError) {
-                throw err;
-            } else {
-                console.log(err);
-                throw new ApplicationError(err, 500);
+                throw new ApplicationError(Object.values(err.errors)[0]?.message || "Please check your details", 400);
             }
+            // two sign-ups with the same email at the same moment
+            if (err?.code === 11000) throw new ApplicationError("An account with this email already exists", 400);
+            console.log(err);
+            throw new ApplicationError("Could not create your account. Please try again.", 500);
 
         }
     }
@@ -67,9 +75,10 @@ export default class UserRepository {
         }
     }
 
+    // Emails are matched ignoring case and spaces: "Ravi@X.com " finds ravi@x.com
     async findByEmail(email) {
         try {
-            return await UserModel.findOne({ email });
+            return await UserModel.findOne({ email: emailMatch(email) });
         } catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
@@ -79,7 +88,7 @@ export default class UserRepository {
     // Returns the user only if they are an admin, otherwise null
     async findAdminByEmail(email) {
         try {
-            return await UserModel.findOne({ email, type: "admin" });
+            return await UserModel.findOne({ email: emailMatch(email), type: "admin" });
         } catch (err) {
             console.log(err);
             throw new ApplicationError("Something went wrong with database", 500);
@@ -90,9 +99,13 @@ export default class UserRepository {
     async updateUser(userID, data) {
         try {
             const user = await UserModel.findById(userID)
-            console.log("getting error",user)
             if (!user) {
-                throw new ApplicationError("user not found", 500);
+                throw new ApplicationError("User not found", 404);
+            }
+            // a new email must not belong to someone else
+            if (data.email !== undefined) {
+                const taken = await UserModel.exists({ _id: { $ne: user._id }, email: emailMatch(data.email) });
+                if (taken) throw new ApplicationError("Another account already uses this email", 400);
             }
 
             Object.assign(user, data)
@@ -101,12 +114,12 @@ export default class UserRepository {
             return user
 
         } catch (err) {
-             if (err instanceof mongoose.Error.ValidationError) {
-                throw err;
-            } else {
-                console.log(err);
-                throw new ApplicationError("Something get wrong", 500);
+            if (err instanceof ApplicationError) throw err;
+            if (err instanceof mongoose.Error.ValidationError) {
+                throw new ApplicationError(Object.values(err.errors)[0]?.message || "Please check your details", 400);
             }
+            console.log(err);
+            throw new ApplicationError("Could not save your details. Please try again.", 500);
         }
 
     }
@@ -204,7 +217,7 @@ export default class UserRepository {
                     totalSpent: {
                         $sum: {
                             $map: {
-                                input: { $filter: { input: "$orders", cond: { $ne: ["$$this.status", "Cancelled"] } } },
+                                input: { $filter: { input: "$orders", cond: { $not: { $in: ["$$this.status", ["Cancelled", "Returned"]] } } } },
                                 in: "$$this.totalAmount",
                             },
                         },

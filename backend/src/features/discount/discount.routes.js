@@ -2,6 +2,7 @@ import express from 'express';
 import { cartModel } from '../cartItems/cartItems.schema.js';
 import DiscountRepository from './discount.repository.js';
 import { ApplicationError } from '../../error-handler/applicationError.js';
+import { unitPrice } from '../../helper/buildOrderData.js';
 
 // Shoppers: check a coupon at checkout.
 // Mounted at /api/discounts behind jwtAuth (we need to know who is asking, for "once per customer").
@@ -15,7 +16,8 @@ discountRouter.post("/apply", async (req, res) => {
     try {
         const cartItems = await cartModel.find({ userID: req.userID }).populate("productID");
         if (cartItems.length === 0) throw new ApplicationError("Your cart is empty", 400);
-        const subTotal = cartItems.reduce((sum, i) => sum + (i.productID?.price ?? 0) * i.quantity, 0);
+        // same sale prices the order will charge
+        const subTotal = cartItems.reduce((sum, i) => sum + unitPrice(i.productID) * i.quantity, 0);
 
         const { discount, amount } = await discountRepo.validateForCheckout(req.body?.code, req.userID, subTotal);
 

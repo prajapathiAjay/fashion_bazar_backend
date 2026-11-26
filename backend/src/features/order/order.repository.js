@@ -314,14 +314,17 @@ export default class OrderRepository {
         Ordered:   ["Packed", "Cancelled"],
         Packed:    ["Shipped", "Cancelled"],
         Shipped:   ["Delivered"],
-        Delivered: [],
+        Delivered: [],   // after delivery only the return flow can change it (-> Returned)
         Cancelled: [],
+        Returned:  [],
     };
 
     // Admin changes the order status.
     // - Delivered + COD  -> the cash was collected, so payment becomes Paid
     // - Cancelled        -> stock goes back; a paid online order is refunded through Razorpay
-    async updateOrderStatus(orderId, newStatus) {
+    // meta = { by: "admin" | "customer", reason } (used when cancelling)
+    async updateOrderStatus(orderId, newStatus, meta = {}) {
+        const by = meta.by === "customer" ? "customer" : "admin";
         const order = await this.getOrderById(orderId);
         const from = order.status;
 
@@ -331,8 +334,13 @@ export default class OrderRepository {
         }
 
         const update = { status: newStatus };
-        if (newStatus === "Delivered" && order.paymentMethod === "cod") {
-            update.paymentStatus = "Paid";
+        if (newStatus === "Delivered") {
+            update.deliveredAt = new Date(); // the return window counts from here
+            if (order.paymentMethod === "cod") update.paymentStatus = "Paid";
+        }
+        if (newStatus === "Cancelled") {
+            update.cancelledBy = by;
+            if (meta.reason) update.cancelReason = String(meta.reason).trim().slice(0, 500);
         }
 
         // Only update if the status is still what we read: if two admins click at the same
@@ -361,7 +369,7 @@ export default class OrderRepository {
             if (updated.paymentMethod === "razorpay" && updated.paymentStatus === "Paid") {
                 const paymentId = updated.paymentInfo?.razorpayPaymentId;
                 const refunded = paymentId
-                    ? await this.refundPayment(paymentId, `Order ${updated.orderNumber} cancelled by admin`)
+                    ? await this.refundPayment(paymentId, `Order ${updated.orderNumber} cancelled by ${by}`)
                     : false;
                 if (refunded) {
                     updated.paymentStatus = "Refunded";
@@ -375,6 +383,138 @@ export default class OrderRepository {
 
         return { order: updated, refundFailed: false };
     }
+
+    // ---------- Customer: cancel / return ----------
+
+    // One of the shopper's own orders (another customer's order id is "not found")
+    async getOwnOrder(userId, orderId) {
+        if (!mongoose.Types.ObjectId.isValid(orderId)) throw new ApplicationError("Order not found", 404);
+        const order = await OrderModel.findOne({ _id: orderId, user: userId });
+        if (!order) throw new ApplicationError("Order not found", 404);
+        return order;
+    }
+
+    // Shopper cancels before it ships: same effect as the admin cancelling
+    // (stock back, coupon use back, online payment refunded)
+    async cancelByCustomer(userId, orderId, reason) {
+        const order = await this.getOwnOrder(userId, orderId);
+        if (!(OrderRepository.NEXT_STATUSES[order.status] ?? []).includes("Cancelled")) {
+            throw new ApplicationError(
+                order.status === "Shipped" || order.status === "Delivered"
+                    ? "This order has already shipped, so it can't be cancelled. You can return it after delivery."
+                    : `This order is ${order.status.toLowerCase()} and can't be cancelled`,
+                400
+            );
+        }
+        return await this.updateOrderStatus(order._id, "Cancelled", { by: "customer", reason });
+    }
+
+    // Shopper asks to return a delivered order (once, within RETURN_DAYS of delivery)
+    async requestReturn(userId, orderId, { reason, refundTo } = {}) {
+        const order = await this.getOwnOrder(userId, orderId);
+        if (order.status !== "Delivered") throw new ApplicationError("Only delivered orders can be returned", 400);
+        if (order.returnRequest?.status) throw new ApplicationError("A return has already been requested for this order", 400);
+
+        // older orders have no deliveredAt; their last update was the delivery
+        const deliveredAt = order.deliveredAt ?? order.updatedAt;
+        const lastDay = new Date(deliveredAt.getTime() + OrderRepository.RETURN_DAYS * 24 * 60 * 60 * 1000);
+        if (Date.now() > lastDay.getTime()) {
+            throw new ApplicationError(`The ${OrderRepository.RETURN_DAYS}-day return window for this order has closed`, 400);
+        }
+
+        const cleanReason = String(reason ?? "").trim();
+        if (!cleanReason) throw new ApplicationError("Please tell us why you're returning it", 400);
+        const cleanRefundTo = String(refundTo ?? "").trim();
+        // cash on delivery: we need somewhere to send the money
+        if (order.paymentMethod === "cod" && !cleanRefundTo) {
+            throw new ApplicationError("Please add a UPI ID or bank details for your refund", 400);
+        }
+
+        // only if nobody requested in the meantime (double click / two tabs)
+        const updated = await OrderModel.findOneAndUpdate(
+            { _id: order._id, status: "Delivered", "returnRequest.status": { $exists: false } },
+            { $set: { returnRequest: {
+                status: "Requested",
+                reason: cleanReason.slice(0, 500),
+                refundTo: cleanRefundTo.slice(0, 200) || undefined,
+                requestedAt: new Date(),
+            } } },
+            { new: true }
+        );
+        if (!updated) throw new ApplicationError("A return has already been requested for this order", 400);
+        return updated;
+    }
+
+    // ---------- Admin: handle a return ----------
+    // action: "approve" | "reject" | "receive" | "refunded"
+    //   approve  Requested -> Approved   (pickup arranged)
+    //   reject   Requested -> Rejected   (note tells the customer why)
+    //   receive  Approved  -> Received   (stock back, order becomes Returned, online payment refunded)
+    //   refunded Received  -> Refunded   (shop has sent the COD refund by UPI / bank)
+    async updateReturn(orderId, action, note) {
+        const order = await this.getOrderById(orderId);
+        const current = order.returnRequest?.status;
+        const STEPS = {
+            approve:  { from: "Requested", to: "Approved" },
+            reject:   { from: "Requested", to: "Rejected" },
+            receive:  { from: "Approved",  to: "Received" },
+            refunded: { from: "Received",  to: "Refunded" },
+        };
+        const step = STEPS[action];
+        if (!step) throw new ApplicationError("Unknown return action", 400);
+        if (current !== step.from) {
+            throw new ApplicationError(current ? `This return is ${current.toLowerCase()}, so it can't be changed that way` : "There is no return request on this order", 400);
+        }
+        const cleanNote = String(note ?? "").trim().slice(0, 500);
+        if (action === "reject" && !cleanNote) throw new ApplicationError("Please add a note telling the customer why", 400);
+
+        const now = new Date();
+        const set = { "returnRequest.status": step.to };
+        if (cleanNote) set["returnRequest.adminNote"] = cleanNote;
+        if (action === "approve" || action === "reject") set["returnRequest.resolvedAt"] = now;
+        if (action === "receive") {
+            set["returnRequest.receivedAt"] = now;
+            set.status = "Returned";
+        }
+        if (action === "refunded") {
+            set["returnRequest.refundedAt"] = now;
+            set.paymentStatus = "Refunded";
+        }
+
+        // only if still in the step we read (two admins clicking -> stock is never put back twice)
+        const updated = await OrderModel.findOneAndUpdate(
+            { _id: order._id, "returnRequest.status": step.from },
+            { $set: set },
+            { new: true }
+        ).populate("user", "firstName lastName email phone");
+        if (!updated) throw new ApplicationError("This return was just changed by someone else, please refresh", 409);
+
+        let refundFailed = false;
+        if (action === "receive") {
+            // the pieces are back on the shelf
+            for (const item of updated.items) {
+                await ProductModel.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
+            }
+            // paid online -> money goes straight back through Razorpay
+            if (updated.paymentMethod === "razorpay" && updated.paymentStatus === "Paid") {
+                const paymentId = updated.paymentInfo?.razorpayPaymentId;
+                const refunded = paymentId
+                    ? await this.refundPayment(paymentId, `Order ${updated.orderNumber} returned`)
+                    : false;
+                if (refunded) {
+                    updated.paymentStatus = "Refunded";
+                    updated.returnRequest.status = "Refunded";
+                    updated.returnRequest.refundedAt = new Date();
+                    await updated.save();
+                } else {
+                    refundFailed = true; // stays Received; the admin refunds from Razorpay and marks it refunded
+                }
+            }
+        }
+        return { order: updated, refundFailed };
+    }
+
+    static RETURN_DAYS = 30;
 
     // BZ-10001, BZ-10002, ... using an atomic counter so two orders never get the same number
     async getNextOrderNumber() {

@@ -16,7 +16,7 @@ export default class WishlistController {
             return res.status(201).json({ success: true, message: "Product added to wishlist", data: wishListItem });
 
         } catch (error) {
-            return res.status(500).json({ success: false, message: error.message });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
 
 
@@ -26,13 +26,14 @@ export default class WishlistController {
     async removeFromWishList(req, res, next) {
     const { id } = req.params;
         try {
-           const deletedItem=await this.wishlistRepository.deleteFromWishList(id);
+           const deletedItem=await this.wishlistRepository.deleteFromWishList(req.userID, id);
+           if (!deletedItem) return res.status(404).json({ success: false, message: "Wishlist item not found" });
            return res.status(200).json({ success: true, message: "Product removed from wishlist", data: deletedItem });
 
 
         } catch (error) {
 
-            return res.status(500).json({ success: false, message: error.message });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
 
         }
     }
@@ -43,7 +44,7 @@ export default class WishlistController {
             const wishListItems=await this.wishlistRepository.getWishList(userId);
             return res.status(200).json({ success: true, message: "Wishlist fetched successfully", data: wishListItems });
         } catch (error) {
-            return res.status(500).json({ success: false, message: error.message });
+            return res.status(error.code || 500).json({ success: false, message: error.message });
         }
 
     }

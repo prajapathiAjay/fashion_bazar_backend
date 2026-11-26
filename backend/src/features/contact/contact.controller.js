@@ -23,6 +23,13 @@ export default class ContactController {
             }
 
             const orderId = text(req.body.orderId)
+            // same limits as the database, but with a clear message instead of "try again"
+            if (message.length > 2000) {
+                return res.status(400).json({ success: false, message: "Please keep your message under 2000 characters" })
+            }
+            if (name.length > 100 || topic.length > 100 || orderId.length > 100 || email.length > 200) {
+                return res.status(400).json({ success: false, message: "Some details are too long. Please shorten them and try again." })
+            }
             await ContactMessageModel.create({ name, email, topic, message, orderId })
             res.status(201).json({ success: true, message: "Message sent" })
 

@@ -1,4 +1,17 @@
 import CartItemsRepository from './cartItems.repository.js';
+import { ApplicationError } from '../../error-handler/applicationError.js';
+
+// ApplicationErrors carry their own status (400 "out of stock", 404 ...), anything else is a 500
+const sendError = (res, err) => {
+  if (err instanceof ApplicationError) {
+    return res.status(err.code).json({ success: false, message: err.message });
+  }
+  console.log(err);
+  return res.status(500).json({ success: false, message: "Something went wrong, please try again" });
+};
+
+// quantity must be a whole number, at least 1 (no 0, -1 or 1.5)
+const isValidQuantity = (q) => Number.isInteger(q) && q >= 1;
 
 export class CartItemsController {
 
@@ -8,94 +21,64 @@ export class CartItemsController {
 
   async add(req, res) {
     try {
-      const { productID, quantity, size } = req.body;
-      const userID = req.userID;
-      console.log("productID", productID, "quantity", quantity, "size", size, "userID", userID);
+      const { productID, size } = req.body;
+      const quantity = req.body.quantity ?? 1;
       if (!productID) {
-        return res.status(400).json({
-          success: false,
-          message: "Valid product ID is required"
-        });
+        return res.status(400).json({ success: false, message: "Valid product ID is required" });
       }
-      const cartData={
-        productID,
-        quantity,
-        size,
-        userID
+      if (!isValidQuantity(quantity)) {
+        return res.status(400).json({ success: false, message: "Quantity must be a whole number, at least 1" });
       }
 
-
-      const cart = await this.cartItemsRepository.add(cartData);
+      const cart = await this.cartItemsRepository.add({ productID, quantity, size, userID: req.userID });
       res.status(201).json({ success: true, message: "Item added to cart successfully", data: cart });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({ success: false, message: err.message });
+      return sendError(res, err);
     }
   }
 
-
- async updateCart(req, res, next) {
+  async updateCart(req, res) {
     try {
-        const { id } = req.params;
-        const { quantity, size } = req.body;
-        const fields = {};
+      const { id } = req.params;
+      const { quantity, size } = req.body;
+      const fields = {};
 
-        if (quantity !== undefined) {
-            if (!Number.isInteger(quantity) || quantity < 1) {
-                return res.status(400).send("Quantity must be a whole number, at least 1");
-            }
-            fields.quantity = quantity;
+      if (quantity !== undefined) {
+        if (!isValidQuantity(quantity)) {
+          return res.status(400).json({ success: false, message: "Quantity must be a whole number, at least 1" });
         }
+        fields.quantity = quantity;
+      }
+      if (size !== undefined) fields.size = size;
 
-        if (size !== undefined) {
-            const allowedSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
-            if (!allowedSizes.includes(size)) {
-                return res.status(400).send("Invalid size");
-            }
-            fields.size = size;
-        }
+      if (Object.keys(fields).length === 0) {
+        return res.status(400).json({ success: false, message: "Send quantity or size to update" });
+      }
 
-        if (Object.keys(fields).length === 0) {
-            return res.status(400).send("Send quantity or size to update");
-        }
+      const item = await this.cartItemsRepository.updateCartItem(req.userID, id, fields);
+      if (!item) return res.status(404).json({ success: false, message: "Item not found" });
 
-        const item = await this.cartItemsRepository.updateCartItem(req.userID, id, fields);
-        if (!item) return res.status(404).send("Item not found");
-
-        res.status(200).json(item);
+      res.status(200).json(item);
     } catch (err) {
-        next(err);
+      return sendError(res, err);
     }
-}
-
+  }
 
   async get(req, res) {
     try {
-      const userID = req.userID;
-      const items = await this.cartItemsRepository.get(userID);
+      const items = await this.cartItemsRepository.get(req.userID);
       return res.status(200).json({ success: true, message: "Cart items retrieved successfully", data: items });
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({ success: false, message: err.message });
+      return sendError(res, err);
     }
   }
 
-
   async delete(req, res) {
-
-
     try {
-
-      const userID = req.userID;
-      const cartItemId = req.params.id;
-      const deletedItem = await this.cartItemsRepository.delete(userID, cartItemId);
+      const deletedItem = await this.cartItemsRepository.delete(req.userID, req.params.id);
       return res.status(200).json({ success: true, message: "Cart item deleted successfully", data: deletedItem });
-
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({ success: false, message: err.message });
+      return sendError(res, err);
     }
-
-
   }
 }

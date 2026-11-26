@@ -22,4 +22,9 @@ orderAdminRouter.patch("/:id/status", (req, res, next) => {
     orderController.updateOrderStatus(req, res, next);
 });
 
+// handle a return: body = { action: "approve" | "reject" | "receive" | "refunded", note? }
+orderAdminRouter.patch("/:id/return", (req, res, next) => {
+    orderController.updateReturn(req, res, next);
+});
+
 export default orderAdminRouter;

@@ -39,6 +39,9 @@ export const userSchema = new mongoose.Schema({
         type: String,
         unique: true,
         required: true,
+        // saved as typed-in-lowercase, so the same address can't become two accounts
+        lowercase: true,
+        trim: true,
     },
     password: {
         type: String,

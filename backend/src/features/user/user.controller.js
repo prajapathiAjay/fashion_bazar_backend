@@ -147,14 +147,26 @@ export default class UserController {
   }
 
   async signUp(req, res, next) {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-   
-    } = req.body;
+    const firstName = typeof req.body?.firstName === 'string' ? req.body.firstName.trim() : '';
+    const lastName = typeof req.body?.lastName === 'string' ? req.body.lastName.trim() : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
     try {
+      // same rules as reset / change password (never trust only the browser)
+      if (!firstName) return res.status(400).json({ success: false, message: 'Please enter your first name.' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+      }
+      if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters and include a letter and a number.',
+        });
+      }
+      // emails are unique ignoring case: Ravi@x.com and ravi@x.com are the same person
+      if (await this.userRepository.findByEmail(email)) {
+        return res.status(400).json({ success: false, message: 'An account with this email already exists. Please log in.' });
+      }
 
       const hashedPassword = await bcrypt.hash(password, 12)
       const user = {
@@ -162,12 +174,14 @@ export default class UserController {
         lastName,
         email,
         password: hashedPassword,
-      
       };
       await this.userRepository.signUp(user);
       // never send the password hash back to the browser
       res.status(201).json({ success: true, message: 'Sign up successful', data: { user: { firstName, lastName, email } } });
     } catch (err) {
+      if (err instanceof ApplicationError) {
+        return res.status(err.code).json({ success: false, message: err.message });
+      }
       next(err);
     }
   }
@@ -182,7 +196,7 @@ export default class UserController {
           .json({ success: false, message: 'Incorrect Credentials' });
       } else {
         // 2. Compare password with hashed password.
-        const result = await bcrypt.compare(req.body.password, user.password);
+        const result = await bcrypt.compare(String(req.body.password ?? ''), user.password || '');
         if (result) {
           // 3. Create token.
           const token = jwt.sign(
@@ -272,11 +286,25 @@ export default class UserController {
     const userID = req.userID;
 
     try {
+      if (data.email !== undefined) {
+        data.email = String(data.email).trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+          return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+        }
+      }
+      // phone is optional on the profile, but if given it must be a 10-digit Indian mobile
+      if (data.phone !== undefined && String(data.phone).trim() !== '') {
+        const digits = String(data.phone).replace(/\D/g, '').slice(-10);
+        if (!/^[6-9]\d{9}$/.test(digits)) {
+          return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number.' });
+        }
+        data.phone = digits;
+      }
       const updatedUser = await this.userRepository.updateUser(userID,data)
       res.status(200).json({ success: true, message: "user updated Succesfully" })
 
     } catch (error) {
-      return res.status(500).json({ success: false, message: error.message })
+      return res.status(error.code || 500).json({ success: false, message: error.message })
     }
 
 
