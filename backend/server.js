@@ -30,6 +30,7 @@ import contactRouter from './src/features/contact/contact.routes.js';
 import contactAdminRouter from './src/features/contact/contact.admin.routes.js';
 import { faqRouter, faqAdminRouter } from './src/features/faq/faq.routes.js';
 import { settingsRouter, settingsAdminRouter } from './src/features/settings/settings.routes.js';
+import statsAdminRouter from './src/features/stats/stats.routes.js';
 // 2. Create Server
 const server = express();
 
@@ -123,6 +124,11 @@ server.use('/api/admin/settings',
   jwtAuth,
   isAdmin,
   settingsAdminRouter);
+// Admin panel: Dashboard + Analytics numbers worked out from real orders
+server.use('/api/admin/stats',
+  jwtAuth,
+  isAdmin,
+  statsAdminRouter);
 // Public: store name and contact details for the website's footer / Contact page
 server.use('/api/settings', settingsRouter);
 // Public: published FAQs for the website's Help centre
