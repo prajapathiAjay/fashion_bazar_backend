@@ -6,6 +6,17 @@ import { CategoryModel } from "../category/category.schema.js";
 
 const ProductModel = mongoose.model("Product", productSchema);
 
+// Bad input (a size that isn't allowed, negative stock...) is the admin's to fix -> 400 with the reason;
+// anything else is a real server error -> 500
+const productError = (err) => {
+    if (err instanceof mongoose.Error.ValidationError) {
+        return new ApplicationError(Object.values(err.errors)[0]?.message || "Please check the product details", 400);
+    }
+    if (err instanceof mongoose.Error.CastError) return new ApplicationError(`Invalid value for ${err.path}`, 400);
+    console.log(err);
+    return new ApplicationError("Something went wrong with the database", 500);
+};
+
 // "M,L" -> ["M","L"]
 const toList = (value) => String(value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 
@@ -31,8 +42,7 @@ class ProductRepository{
             const newProduct = new ProductModel(productData);
             return await newProduct.save();
         }catch(err){
-            console.log(err);
-            throw new ApplicationError(err, 500);    
+            throw productError(err);
         }
     }
 
@@ -174,8 +184,7 @@ class ProductRepository{
         try{
             return await ProductModel.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
         }catch(err){
-            console.log(err);
-            throw new ApplicationError(err.message, 500);
+            throw productError(err);
         }
     }
 

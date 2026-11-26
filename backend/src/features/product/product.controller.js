@@ -63,7 +63,7 @@ export default class ProductController {
     const createdProduct = await this.productRepository.add(req.body);
    return  res.status(201).json({success:true,message:"Product added successfully", data:createdProduct});
   }catch(err){
-    return res.status(500).json({
+    return res.status(err.code || 500).json({
       success: false,
       message: err.message,
     });
@@ -110,7 +110,7 @@ export default class ProductController {
       return res.status(200).json({success:true,message:"Product updated successfully", data:product});
     }catch(err){
       console.log(err);
-      return res.status(500).json({success:false,message:err.message || "Something went wrong"});
+      return res.status(err.code || 500).json({success:false,message:err.message || "Something went wrong"});
     }
   }
 
