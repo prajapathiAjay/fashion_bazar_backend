@@ -1,8 +1,10 @@
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables: never commit real values (secrets), only the template
 .env
+.env.*
+!.env.example
 
 # Logs
 *.log

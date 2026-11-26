@@ -1,7 +1,8 @@
+// Load .env FIRST: some config files (cloudinary, razorpay) read process.env as soon as they're imported
+import 'dotenv/config';
 // 1. Import Exprerss
 import express from 'express';
 import swagger from 'swagger-ui-express';
-import dotenv from "dotenv";
 import { getJwtSecret } from './src/config/jwtSecret.js';
 
 import productRouter from './src/features/product/product.routes.js';
@@ -34,17 +35,16 @@ import statsAdminRouter from './src/features/stats/stats.routes.js';
 // 2. Create Server
 const server = express();
 
-// load all the environment variables in application
-dotenv.config();
-
 // Stop right away if the login-token key is missing, instead of failing on the first sign-in
 getJwtSecret();
 
-// CORS policy configuration
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173'];
+// CORS: only the website and admin panel addresses in ALLOWED_ORIGINS (.env, comma separated) may call the API
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim());
 server.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  if (ALLOWED_ORIGINS.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   }
@@ -197,8 +197,10 @@ server.use((req, res) => {
 });
 
 // 5. Specify port.
-server.listen(3200, ()=>{
-  console.log('Server is running at 3200');
+// hosting platforms (Render, Railway...) give the port in PORT
+const PORT = Number(process.env.PORT) || 3200;
+server.listen(PORT, ()=>{
+  console.log(`Server is running at ${PORT}`);
   connectUsingMongoose();
 });
 
